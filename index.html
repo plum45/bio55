@@ -530,7 +530,7 @@
             }
         }
 
-        function loadModelIntoScene(modelData) {
+        async function loadModelIntoScene(modelData) {
             if(currentModel && currentModel.id === modelData.id) return; 
             currentModel = modelData;
             
@@ -545,6 +545,36 @@
             if(activeSceneMesh) {
                 scene.remove(activeSceneMesh);
                 activeSceneMesh = null;
+            }
+
+            // ===== ดึงพิกัดที่บันทึกไว้จาก Firebase (ถ้ามี) =====
+            try {
+                const savedDoc = await getDoc(doc(firestoreDB, "models", modelData.id));
+                if (savedDoc.exists()) {
+                    const savedData = savedDoc.data();
+                    if (savedData.hotspots && savedData.hotspots.length > 0) {
+                        // เอาพิกัดจาก Cloud มาทับค่าเริ่มต้นในโค้ด
+                        savedData.hotspots.forEach(savedHs => {
+                            const localHs = modelData.hotspots.find(h => h.num === savedHs.num);
+                            if (localHs && savedHs.pos) {
+                                localHs.pos = [...savedHs.pos]; // ทับพิกัดจาก Firebase
+                            }
+                        });
+                        console.log("✅ โหลดพิกัดจาก Firebase สำเร็จ:", modelData.id);
+                    }
+                    // โหลดค่าเส้น (ถ้ามี)
+                    if (savedData.lineWidth) {
+                        leaderLineWidth = savedData.lineWidth;
+                        document.getElementById('line-width').value = leaderLineWidth;
+                        document.getElementById('line-width-val').textContent = leaderLineWidth;
+                    }
+                    if (savedData.lineColor) {
+                        leaderLineColor = savedData.lineColor;
+                        document.getElementById('line-color').value = leaderLineColor;
+                    }
+                }
+            } catch (e) {
+                console.warn("ไม่สามารถดึงข้อมูลจาก Firebase ได้ (ใช้ค่าเริ่มต้น):", e.message);
             }
 
             const loader = new GLTFLoader();
