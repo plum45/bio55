@@ -206,7 +206,7 @@
             <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 10px;">
                 * ในโหมดแก้ไข Double Click บนโมเดลเพื่อสร้างจุดใหม่
             </div>
-            <div id="drag-log" style="font-size: 0.75rem; color: #0ea5e9; margin-bottom: 15px; font-weight: bold; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; text-align: center;">พร้อมแก้ไข...</div>
+            <div id="drag-log" style="font-size: 0.75rem; color: #0ea5e9; margin-bottom: 15px; font-weight: bold; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; text-align: left; max-height: 150px; overflow-y: auto;">พร้อมแก้ไข...</div>
             <button class="save-btn" id="save-firebase-btn">SAVE TO FIREBASE</button>
         </div>
 
@@ -376,6 +376,7 @@
                 controls.update();
 
                 createHotspots(modelData.hotspots);
+                updateDragLog(); // แสดง Log อัตโนมัติเมื่อโหลดโมเดลเสร็จ
                 document.getElementById('loading').classList.remove('show');
             });
         }
@@ -423,6 +424,14 @@
             htmlLabels.forEach(l => l.element.classList.remove('active'));
         };
 
+        function updateDragLog() {
+            if (!currentModel) return;
+            const logContainer = document.getElementById('drag-log');
+            logContainer.innerHTML = currentModel.hotspots.map(h => 
+                `📌 จุดที่ ${h.num}: [${h.pos[0].toFixed(3)}, ${h.pos[1].toFixed(3)}, ${h.pos[2].toFixed(3)}]`
+            ).join('<br>');
+        }
+
         let activeDragLabel = null;
 
         // ดับเบิลคลิกเพื่อสร้างจุดใหม่
@@ -455,6 +464,7 @@
                 
                 currentModel.hotspots.push(newH);
                 createHotspots([newH]);
+                updateDragLog();
             }
         });
 
@@ -480,8 +490,8 @@
                 activeDragLabel.labelObj.pos.copy(localPoint);
                 activeDragLabel.data.pos = [localPoint.x, localPoint.y, localPoint.z];
 
-                // อัปเดต UI Log เพื่อให้กูเห็น
-                document.getElementById('drag-log').innerText = `จุดที่ ${activeDragLabel.data.num}: [${localPoint.x.toFixed(3)}, ${localPoint.y.toFixed(3)}, ${localPoint.z.toFixed(3)}]`;
+                // อัปเดต UI Log เพื่อให้แสดงทุกจุด
+                updateDragLog();
             }
         });
 
