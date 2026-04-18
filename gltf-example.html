@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GLB Model Loader Example</title>
+    <style>
+        body { margin: 0; background-color: #111; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 20;}
+        #ui { position: absolute; top: 30px; left: 30px; z-index: 10; background: rgba(10, 20, 30, 0.85); padding: 25px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        h2 { margin-top: 0; color: #4facfe; }
+        p { color: #ccc; font-size: 14px;}
+    </style>
+    <!-- โหลดโมดูล Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="ui">
+        <h2>Medical 3D Viewer</h2>
+        <p>ตัวอย่างการโหลดไฟล์ .glb (GLTF) ด้วย Three.js</p>
+        <p style="color: #4ade80; margin-top: 10px;">> คลิกเมาส์ค้างและลากเพื่อหมุนมุมกล้อง</p>
+        <p style="color: #4ade80;">> เลื่อนลูกกลิ้งเมาส์เพื่อซูม</p>
+    </div>
+    
+    <div id="loading">กำลังเตรียมโหลดไฟล์ Model... 0%</div>
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        
+        // --- ส่วนสำคัญ: นำเข้า GLTFLoader ---
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // 1. ตั้งค่าฉาก (Scene), กล้อง (Camera), และตัวเรนเดอร์ภาพ (Renderer)
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x111111, 2, 15);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.5, 5); // ตั้งกล้องถอยออกมาให้เห็นโมเดล
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        // ทำให้สีสมจริงขึ้น
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        container.appendChild(renderer.domElement);
+
+        // ระบบควบคุมมุมกล้องหมุนไปมาง่ายๆ
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // 2. จัดแสง (Lighting - สำคัญมาก โมเดล 3D จะดูจริงหรือไม่จริงอยู่ที่แสง)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // แสงบรรยากาศสว่างๆ โอบล้อม
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5); // แสงหลัก (เหมือนแสงอาทิตย์)
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+
+        const backLight = new THREE.DirectionalLight(0xaaaaff, 1.0); // แสงด้านหลังเสริมมิติ (Rim light)
+        backLight.position.set(-5, 5, -5);
+        scene.add(backLight);
+
+
+        // --- 3. ขั้นตอนการใช้งาน GLTFLoader โหลดโมเดล .glb ---
+        
+        const loader = new GLTFLoader();
+        const loadingEl = document.getElementById('loading');
+
+        // กำหนดที่อยู่ของไฟล์โมเดล: (สมมติว่าเอาไฟล์หัวใจชื่อ heart.glb มาวางในโฟลเดอร์เดียวกัน)
+        const modelPath = './model.glb'; 
+
+        loader.load(
+            // 3.1 ใส่ Path ไฟล์
+            modelPath,
+            
+            // 3.2 เมื่อโหลดสำเร็จ (OnLoad)
+            function ( gltf ) {
+                const model = gltf.scene;
+                
+                // สามารถสั่งย่อขยาย หรือขยับตำแหน่งได้ตรงนี้
+                model.position.set(0, 0, 0); // ไว้ตรงกลาง
+                 // model.scale.set(2, 2, 2); // ถ้าโมเดลเล็กไปก็ขยาย 2 เท่า
+
+                // ตรวจสอบและให้โมเดลพวกเงาสมจริง
+                model.traverse(function(node) {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+
+                scene.add( model ); // นำเข้าฉาก
+                loadingEl.style.display = 'none'; // ซ่อนข้อความว่ากำลังโหลด
+                console.log( '✅ Model loaded successfully!' );
+            },
+
+            // 3.3 ระหว่างทำการโหลด (OnProgress) เอาไว้ทำหลอดโหลดเปอร์เซ็นต์
+            function ( xhr ) {
+                if(xhr.total > 0) {
+                    const percent = Math.round( ( xhr.loaded / xhr.total * 100 ) );
+                    loadingEl.innerText = `กำลังโหลดโมเดล... ${percent}%`;
+                } else {
+                    loadingEl.innerText = `กำลังโหลดข้อมูลโมเดล...`;
+                }
+            },
+
+            // 3.4 ถ้ามีปัญหาหรือหาไฟล์ไม่เจอ (OnError)
+            function ( error ) {
+                console.error( '❌ Error loading model:', error );
+                loadingEl.innerText = `การโหลดล้มเหลว (เกิด Error: ไม่พบไฟล์ ${modelPath}) \nกรุณาเอาไฟล์ .glb มาวางไว้ก่อนครับ`;
+                loadingEl.style.color = "#ff4444";
+            }
+        );
+
+        // 4. กรณีจอขยายใหญ่หรือเล็กลง ให้โปรแกรมปรับสัดส่วนภาพอัตโนมัติ
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 5. ลูปการวาดภาพ (Animation Loop)
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); 
+            renderer.render(scene, camera);
+        }
+        animate();
+
+    </script>
+</body>
+</html>
