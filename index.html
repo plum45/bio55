@@ -407,6 +407,22 @@
             });
         }
 
+        function showInfo(h, el) {
+            htmlLabels.forEach(l => l.element.classList.remove('active'));
+            el.classList.add('active');
+            
+            document.getElementById('info-num').innerText = h.num;
+            document.getElementById('info-th').innerText = h.th;
+            document.getElementById('info-en').innerText = h.name;
+            document.getElementById('info-desc').innerHTML = h.desc || 'ไม่มีคำอธิบายในขณะนี้';
+            document.getElementById('info-panel').classList.add('visible');
+        }
+
+        window.closeInfoPanel = () => {
+            document.getElementById('info-panel').classList.remove('visible');
+            htmlLabels.forEach(l => l.element.classList.remove('active'));
+        };
+
         let activeDragLabel = null;
 
         // ดับเบิลคลิกเพื่อสร้างจุดใหม่
