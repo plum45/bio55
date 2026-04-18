@@ -468,28 +468,29 @@
 
         function updateHotspotPositions() {
             leaderSVG.innerHTML = '';
+            if (!activeSceneMesh) return;
+
             htmlLabels.forEach(label => {
+                // แปลงพิกัดจาก Local (ของโมเดล) ไปเป็น World (ของดาว)
+                // เพื่อให้ป้ายขยับตามโมเดลร้อยเปอร์เซ็นต์แม้จะสเกลหรือหมุน
                 const wp = label.pos.clone();
-                if (activeSceneMesh) {
-                    // If stored as local (edit mode does this) we need to convert to world
-                    // But here label.pos is already in world space in the loop
-                }
+                activeSceneMesh.localToWorld(wp);
 
                 const screenPos = wp.project(camera);
                 const x = (screenPos.x + 1) * container.clientWidth / 2;
                 const y = (-screenPos.y + 1) * container.clientHeight / 2;
 
-                // Simple check for "behind" camera
                 if (screenPos.z > 1) {
                     label.element.style.display = 'none';
                     return;
                 }
                 
                 label.element.style.display = 'flex';
-                label.element.style.left = `${x + (window.innerWidth <= 1024 ? 0 : 320) - 20}px`;
-                label.element.style.top = `${y - 20}px`;
+                // ปรับตำแหน่งตาม Sidebar (320px) ถ้าเป็น Desktop
+                const offset = (window.innerWidth <= 1024) ? 0 : 320;
+                label.element.style.left = `${x + offset - (label.element.clientWidth / 2)}px`;
+                label.element.style.top = `${y - (label.element.clientHeight / 2)}px`;
 
-                // Draw curve if active
                 if (label.element.classList.contains('active')) {
                     const rect = document.getElementById('info-panel').getBoundingClientRect();
                     const targetX = (window.innerWidth <= 768) ? window.innerWidth / 2 : rect.left;
@@ -497,7 +498,7 @@
                     
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     const cp1x = x + (targetX - x) * 0.5;
-                    const d = `M ${x + (window.innerWidth <= 1024 ? 0 : 320)} ${y} C ${cp1x + (window.innerWidth <= 1024 ? 0 : 320)} ${y}, ${cp1x + (window.innerWidth <= 1024 ? 0 : 320)} ${targetY}, ${targetX} ${targetY}`;
+                    const d = `M ${x + offset} ${y} C ${cp1x + offset} ${y}, ${cp1x + offset} ${targetY}, ${targetX} ${targetY}`;
                     
                     path.setAttribute("d", d);
                     path.setAttribute("stroke", "#0ea5e9");
