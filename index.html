@@ -34,6 +34,7 @@
             animation: rotateBg 30s linear infinite; z-index: -1; pointer-events: none;
         }
         @keyframes rotateBg { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Sidebar */
         #sidebar {
@@ -75,92 +76,116 @@
         #three-canvas { width: 100%; height: 100%; outline: none; cursor: grab; }
         #three-canvas:active { cursor: grabbing; }
 
+        /* SVG leader lines overlay */
+        #leader-svg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 19;
+        }
+
+        /* Number Badges */
         .hs-badge {
             position: absolute;
             top: 0; left: 0;
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, rgba(2, 132, 199, 0.9), rgba(14, 165, 233, 0.9));
-            border: 2px solid rgba(255, 255, 255, 0.8);
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.95), rgba(14, 165, 233, 0.95));
+            border: 2px solid rgba(255, 255, 255, 0.9);
             border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            color: white; font-weight: 600; font-size: 1.1rem;
+            color: white; font-weight: 700; font-size: 0.9rem;
             cursor: pointer; pointer-events: auto;
-            box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
-            transition: background 0.2s, box-shadow 0.2s, transform 0.1s linear; 
+            box-shadow: 0 0 12px rgba(14, 165, 233, 0.5);
             transform: translate(-50%, -50%); 
-            z-index: 20;
+            z-index: 21;
             opacity: 0;
             user-select: none;
-            touch-action: none; /* ป้องกันการเลื่อนหน้าจอมือถือตอนลาก */
+            touch-action: none;
+            transition: background 0.2s, box-shadow 0.2s;
         }
-        .hs-badge.dragging {
-            transition: none !important;
-        }
+        .hs-badge.dragging { transition: none !important; }
         .hs-badge:not(.dragging):hover {
             background: linear-gradient(135deg, #059669, #10b981); 
             border-color: white;
             box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
         }
+        .hs-badge.active-badge {
+            background: linear-gradient(135deg, #f59e0b, #eab308);
+            border-color: #fff;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
+        }
 
         /* Controls Overlay */
         #model-overlay {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            background: rgba(10, 15, 30, 0.8); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            padding: 15px 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(10, 15, 30, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            padding: 12px 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12);
             text-align: center; opacity: 0; transition: opacity 0.5s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px;
             z-index: 40; pointer-events: none;
         }
-        #model-overlay h2 { font-size: 1.25rem; font-weight: 500;}
+        #model-overlay h2 { font-size: 1.1rem; font-weight: 500;}
+
+        /* Info Panel (replaces blurry modal) */
+        #info-panel {
+            position: absolute; top: 20px; right: 20px; width: 340px;
+            background: rgba(8, 15, 35, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 16px;
+            padding: 0; z-index: 45; pointer-events: auto;
+            transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+        #info-panel.visible { transform: translateX(0); }
+        .panel-accent { height: 4px; background: linear-gradient(to right, #0ea5e9, #a855f7, #ec4899); }
+        .panel-inner { padding: 20px; }
+        .panel-num {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px; border-radius: 50%; font-weight: 700; font-size: 0.9rem;
+            background: linear-gradient(135deg, #0284c7, #0ea5e9); color: white; margin-right: 10px;
+            vertical-align: middle;
+        }
+        .panel-th { font-size: 1.3rem; font-weight: 600; color: #fff; margin-bottom: 4px; display: inline; vertical-align: middle; }
+        .panel-en { font-size: 0.85rem; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; margin-top: 6px; }
+        .panel-desc { font-size: 0.92rem; line-height: 1.7; color: #cbd5e1; }
+        .panel-close {
+            position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.08); border: none; color: white;
+            width: 28px; height: 28px; border-radius: 50%; cursor: pointer; transition: 0.2s; font-size: 0.8rem;
+        }
+        .panel-close:hover { background: #ef4444; }
 
         /* Admin UI */
         #admin-panel {
-            position: absolute; top: 20px; right: 20px; z-index: 50;
-            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
-            border: 1px solid var(--accent); padding: 15px; border-radius: 12px;
-            display: flex; flex-direction: column; gap: 10px; display: none;
+            position: absolute; bottom: 80px; right: 20px; z-index: 50;
+            background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px);
+            border: 1px solid var(--accent); padding: 16px; border-radius: 14px;
+            display: none; flex-direction: column; gap: 10px; width: 280px;
         }
         #admin-panel.active { display: flex; }
-        .edit-switch { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #fff;}
+        .admin-title { font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
+        .edit-switch { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #cbd5e1;}
+
+        /* Custom range and color inputs */
+        .admin-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #94a3b8; }
+        .admin-row label { min-width: 70px; }
+        .admin-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+        .admin-row input[type="color"] { width: 30px; height: 24px; border: none; border-radius: 4px; cursor: pointer; background: transparent; }
+        
         .save-btn {
-            background: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px;
-            cursor: pointer; font-family: inherit; font-weight: bold; font-size: 0.9rem; transition: 0.2s;
+            background: #10b981; color: white; border: none; padding: 9px 15px; border-radius: 8px;
+            cursor: pointer; font-family: inherit; font-weight: 600; font-size: 0.85rem; transition: 0.2s;
         }
         .save-btn:hover { background: #059669; }
         
         .dev-badge {
-            position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5);
-            padding: 5px 15px; border-radius: 20px; border: 1px dashed #cbd5e1; cursor: pointer; color: #cbd5e1;
-            z-index: 49;
+            position: absolute; bottom: 25px; right: 20px; background: rgba(0,0,0,0.6);
+            padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; color: #94a3b8;
+            z-index: 49; font-size: 0.8rem; transition: 0.2s;
         }
-
-        /* Modal / Popup */
-        #info-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: 0.3s; z-index: 100;
-        }
-        #info-modal.show { opacity: 1; pointer-events: auto; }
-        .modal-content {
-            background: #0f172a; width: 550px; max-width: 90%; border-radius: 20px;
-            border: 1px solid var(--border); padding: 30px; transform: translateY(20px); transition: 0.4s;
-        }
-        #info-modal.show .modal-content { transform: translateY(0); }
-        .close-btn {
-            position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; color: white;
-            width: 30px; height: 30px; border-radius: 50%; cursor: pointer; transition: 0.2s;
-        }
-        .close-btn:hover { background: #ef4444; }
-        .modal-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .th-title { font-size: 1.6rem; font-weight: 600; color: #fff; margin-bottom: 5px; }
-        .en-title { font-size: 1rem; color: var(--accent); font-weight: 400; text-transform: uppercase;}
-        .modal-body { font-size: 1rem; line-height: 1.6; color: #cbd5e1; }
+        .dev-badge:hover { color: #fff; border-color: var(--accent); }
 
         #loading {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(4, 9, 20, 0.8); backdrop-filter: blur(5px);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; transition: 0.4s; pointer-events: none; opacity: 0;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 55; transition: 0.4s; pointer-events: none; opacity: 0;
         }
         #loading.show { opacity: 1; pointer-events: auto; }
         .spinner { width: 45px; height: 45px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;}
@@ -193,33 +218,48 @@
     <div id="main-view">
         <div id="loading"><div class="spinner"></div><div id="loading-text" style="color: #94a3b8;">กำลังประกอบโมเดล 3D...</div></div>
         
+        <!-- SVG for leader lines -->
+        <svg id="leader-svg"></svg>
+        
         <div id="model-overlay">
             <h2 id="ov-title">Select a Model</h2>
-            <p style="font-size: 0.85rem; color: #cbd5e1;">(คลิกที่วงกลมตัวเลขบน 3D เพื่ออ่านข้อมูล)</p>
+            <p style="font-size: 0.8rem; color: #cbd5e1;">(คลิกตัวเลขเพื่ออ่านข้อมูล)</p>
+        </div>
+
+        <!-- Info Panel (slides in from right, no blur overlay) -->
+        <div id="info-panel">
+            <div class="panel-accent"></div>
+            <button class="panel-close" onclick="closeInfoPanel()">✕</button>
+            <div class="panel-inner">
+                <div style="margin-bottom: 10px;">
+                    <span class="panel-num" id="p-num">1</span>
+                    <span class="panel-th" id="p-th">--</span>
+                </div>
+                <div class="panel-en" id="p-en">--</div>
+                <div class="panel-desc" id="p-desc">--</div>
+            </div>
         </div>
 
         <button class="dev-badge" onclick="document.getElementById('admin-panel').classList.toggle('active')">🔧 Admin</button>
         <div id="admin-panel">
+            <div class="admin-title">⚙️ ตั้งค่าป้ายกำกับ</div>
             <label class="edit-switch">
-                <input type="checkbox" id="edit-mode-toggle"> <span>เปิดใช้งานโหมดลากย้าย (Edit Mode)</span>
+                <input type="checkbox" id="edit-mode-toggle"> <span>โหมดลากย้ายจุด (Edit Mode)</span>
             </label>
-            <button class="save-btn" onclick="saveToFirebase()">☁️ Save Config / Export</button>
-            <textarea id="export-box" style="display:none; width:100%; height:80px; margin-top:5px; background: rgba(0,0,0,0.5); color:#a7f3d0; border:1px solid #10b981; border-radius:4px; padding:5px; font-size:10px; resize:none;" readonly></textarea>
-            <p style="font-size: 0.75rem; color: #94a3b8; max-width: 250px;">ลากจุดบนโมเดล แล้วกดปุ่มบน เพื่อเอาพิกัดล่าสุดไปใส่ในโค้ดอย่างถาวร</p>
+            <div class="admin-row">
+                <label>ความหนาเส้น</label>
+                <input type="range" id="line-width" min="1" max="6" value="2" step="0.5">
+                <span id="line-width-val">2</span>
+            </div>
+            <div class="admin-row">
+                <label>สีเส้น</label>
+                <input type="color" id="line-color" value="#0ea5e9">
+            </div>
+            <button class="save-btn" onclick="saveToFirebase()">☁️ บันทึกพิกัด + ล็อค</button>
+            <textarea id="export-box" style="display:none; width:100%; height:70px; margin-top:3px; background: rgba(0,0,0,0.5); color:#a7f3d0; border:1px solid #10b981; border-radius:4px; padding:5px; font-size:9px; resize:none;" readonly></textarea>
         </div>
         
         <div id="three-canvas"></div>
-    </div>
-
-    <div id="info-modal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="closeModal()">✕</button>
-            <div class="modal-header">
-                <div class="th-title" id="m-th-title">--</div>
-                <div class="en-title" id="m-en-title">--</div>
-            </div>
-            <div class="modal-body" id="m-desc">--</div>
-        </div>
     </div>
 
     <script type="module">
@@ -227,7 +267,7 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         
-        // --- FIREBASE SDK INTEGRATION (VERCEL READY) ---
+        // --- FIREBASE SDK ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
@@ -241,23 +281,21 @@
           measurementId: "G-4972KR2M5S"
         };
         
-        const app = initializeApp(firebaseConfig);
-        const firestoreDB = getFirestore(app);
+        const fireApp = initializeApp(firebaseConfig);
+        const firestoreDB = getFirestore(fireApp);
 
-        // --- DATABASE LOCAL (โหลดแสดงผลเริ่มต้น) ---
+        // --- DATABASE ---
         const db = [
             { 
                 id: 'neuron', 
                 name: 'เซลล์ประสาท',
-                thName: 'เซลล์ประสาทระบบสั่งการ',
-                enName: 'Motor Neuron Anatomy',
                 file: 'neuron.glb', 
                 desc: 'คลิกวงกลมตัวเลขบน 3D เพื่อสแกนชิ้นส่วนแต่ละบริเวณ', 
                 icon: '⚡',
                 hotspots: [
                     { num: 1, pos: [-0.60, 0.60, 0.1],  name: 'Dendrites',        th: 'เดนไดรต์', desc: '<b>เดนไดรต์ (Dendrites)</b><br>ระยางค์ที่แตกแขนงคล้ายรากไม้แผ่ออกไปรอบๆ ส่วนนี้ทำหน้าที่<b>รับกระแสประสาท</b>เข้าสู่ตัวเซลล์บอดี้' },
                     { num: 2, pos: [-0.40, 0.05, 0.4],  name: 'Nucleus',          th: 'นิวเคลียส', desc: '<b>นิวเคลียส (Nucleus)</b><br>แกนกลางของเซลล์ประสาทที่เก็บสารพันธุกรรม ทำหน้าที่ควบคุมการทำงานและการเจริญเติบโตของเซลล์' },
-                    { num: 3, pos: [-0.35, -0.15, 0.2], name: 'Cell body (Soma)',th: 'เซลล์บอดี้', desc: '<b>เซลล์บอดี้ (Soma)</b><br>ส่วนหลักของเซลล์ที่มีไซโตพลาซึมและออร์แกเนลล์อื่นๆ ที่ช่วยรักษาสภาพและผลิตโปรตีนเพื่อควบคุมเซลล์ประสาท' },
+                    { num: 3, pos: [-0.35, -0.15, 0.2], name: 'Cell body (Soma)', th: 'เซลล์บอดี้', desc: '<b>เซลล์บอดี้ (Soma)</b><br>ส่วนหลักของเซลล์ที่มีไซโตพลาซึมและออร์แกเนลล์อื่นๆ ที่ช่วยรักษาสภาพและผลิตโปรตีนเพื่อควบคุมเซลล์ประสาท' },
                     { num: 4, pos: [-0.20, -0.30, 0.1], name: 'Axon',             th: 'แอกซอน', desc: '<b>แอกซอน (Axon)</b><br>เส้นใยประสาทยาวเดี่ยวที่ทอดตัวออกจากเซลล์บอดี้ เพื่อ<b>ส่งกระแสสัญญาณประสาท</b>ออกไปยังเซลล์อื่นๆ' },
                     { num: 5, pos: [-0.05, -0.50, 0.2], name: 'Myelin Sheath',    th: 'เยื่อไมอีลิน', desc: '<b>เยื่อไมอีลิน (Myelin Sheath)</b><br>ปลอกไขมันทรงกระบอกที่พันรอบแอกซอน เป็นตัวฉนวนชั้นดี ช่วยให้กระแสประสาทเดินทางได้ไวและเสถียรขึ้น' },
                     { num: 6, pos: [0.15, -0.65, 0.2],  name: 'Schwann Cell',     th: 'เซลล์ชวานน์', desc: '<b>เซลล์ชวานน์ (Schwann Cell)</b><br>เซลล์ประกอบที่ห่อหุ้มอยู่กับเยื่อไมอีลิน ทำหน้าที่ผลิตสร้างและซ่อมแซมเยื่อไมอีลินในระบบประสาทรอบนอก' },
@@ -271,8 +309,14 @@
         let activeSceneMesh = null;
         let htmlLabels = []; 
         let baseSizeGlobal = new THREE.Vector3(1,1,1);
+        let activeBadgeIndex = -1;
+
+        // Leader line config
+        let leaderLineWidth = 2;
+        let leaderLineColor = '#0ea5e9';
 
         const container = document.getElementById('three-canvas');
+        const leaderSVG = document.getElementById('leader-svg');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
         camera.position.set(0, 0, 15);
@@ -291,14 +335,72 @@
         const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
         dirLight.position.set(5, 5, 5);
         scene.add(dirLight);
+        const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        backLight.position.set(-5, -3, -5);
+        scene.add(backLight);
 
-        // ระบบจับพิกัดสำหรับ Edit Mode
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
+
+        // --- Admin controls ---
+        document.getElementById('line-width').addEventListener('input', (e) => {
+            leaderLineWidth = parseFloat(e.target.value);
+            document.getElementById('line-width-val').textContent = leaderLineWidth;
+        });
+        document.getElementById('line-color').addEventListener('input', (e) => {
+            leaderLineColor = e.target.value;
+        });
+
+        // --- Info Panel (no blur, shows alongside 3D) ---
+        window.closeInfoPanel = function() {
+            document.getElementById('info-panel').classList.remove('visible');
+            // Remove highlight from all badges
+            htmlLabels.forEach(l => l.element.classList.remove('active-badge'));
+            activeBadgeIndex = -1;
+        }
+
+        function showInfoPanel(hs) {
+            // Highlight the active badge, remove from others
+            htmlLabels.forEach(l => l.element.classList.remove('active-badge'));
+            const idx = htmlLabels.findIndex(l => l.hsData.num === hs.num);
+            if (idx >= 0) {
+                htmlLabels[idx].element.classList.add('active-badge');
+                activeBadgeIndex = idx;
+            }
+
+            document.getElementById('p-num').textContent = hs.num;
+            document.getElementById('p-th').textContent = hs.th;
+            document.getElementById('p-en').textContent = hs.name;
+            document.getElementById('p-desc').innerHTML = hs.desc;
+            document.getElementById('info-panel').classList.add('visible');
+        }
+
+        // --- Anti-Overlap: offset badges that are too close ---
+        function resolveOverlaps(positions) {
+            const minDist = 38; // minimum pixel distance between badges
+            for (let i = 0; i < positions.length; i++) {
+                for (let j = i + 1; j < positions.length; j++) {
+                    const dx = positions[j].x - positions[i].x;
+                    const dy = positions[j].y - positions[i].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < minDist && dist > 0) {
+                        const push = (minDist - dist) / 2;
+                        const angle = Math.atan2(dy, dx);
+                        positions[j].x += Math.cos(angle) * push;
+                        positions[j].y += Math.sin(angle) * push;
+                        positions[i].x -= Math.cos(angle) * push;
+                        positions[i].y -= Math.sin(angle) * push;
+                    }
+                }
+            }
+            return positions;
+        }
 
         function createHotspots(modelData, baseSize) {
             htmlLabels.forEach(lbl => lbl.element.remove());
             htmlLabels = [];
+            activeBadgeIndex = -1;
+            document.getElementById('info-panel').classList.remove('visible');
 
             if(!modelData.hotspots) return;
 
@@ -307,14 +409,11 @@
                 el.className = 'hs-badge';
                 el.innerText = hs.num;
                 
-                // คลิกเปิด Modal
+                // คลิกเปิด Info Panel (ไม่เบลอ ยังเห็นโมเดลอยู่)
                 el.onclick = (e) => {
                     const isEditMode = document.getElementById('edit-mode-toggle').checked;
-                    if (isEditMode) return; // กั้นไม่ให้เปิด Modal ตอนที่กำลังจัดการพิกัด
-                    document.getElementById('m-th-title').innerText = hs.th;
-                    document.getElementById('m-en-title').innerText = hs.name;
-                    document.getElementById('m-desc').innerHTML = hs.desc;
-                    document.getElementById('info-modal').classList.add('show');
+                    if (isEditMode) return;
+                    showInfoPanel(hs);
                 };
 
                 document.getElementById('main-view').appendChild(el);
@@ -330,12 +429,13 @@
                 const labelObj = { element: el, anchor: anchor, hsData: hs, isDragging: false };
                 htmlLabels.push(labelObj);
 
-                // --- EDIT MODE: Drag and Drop Logic ---
+                // --- EDIT MODE: Drag and Drop ---
                 el.onpointerdown = (e) => {
                     const isEditMode = document.getElementById('edit-mode-toggle').checked;
                     if (!isEditMode) return;
 
                     e.preventDefault();
+                    e.stopPropagation();
                     labelObj.isDragging = true;
                     el.classList.add('dragging');
                     el.style.cursor = 'grabbing';
@@ -362,7 +462,6 @@
                         el.removeEventListener('pointermove', onPointerMove);
                         el.removeEventListener('pointerup', onPointerUp);
 
-                        // ใช้ Raycaster หดทะลุลงไปหาพิกัดโลกสมมติ
                         const rect = container.getBoundingClientRect();
                         mouse.x = (tempX / container.clientWidth) * 2 - 1;
                         mouse.y = -(tempY / container.clientHeight) * 2 + 1;
@@ -371,22 +470,17 @@
                         const intersects = raycaster.intersectObject(activeSceneMesh, true);
                         if (intersects.length > 0) {
                             const hitWorld = intersects[0].point;
-                            // อัปเดตสมอ 3 มิติ
                             anchor.position.copy(activeSceneMesh.worldToLocal(hitWorld.clone()));
                             
-                            // อัปเดตพิกัด [X, Y, Z] ลงในข้อมูล Local ทันที
                             hs.pos[0] = (anchor.position.x * 2) / baseSize.x;
                             hs.pos[1] = (anchor.position.y * 2) / baseSize.y;
                             hs.pos[2] = (anchor.position.z * 2) / baseSize.z;
-                            console.log(`Updated Hotspot #${hs.num} to:`, hs.pos);
+                            console.log(`Updated #${hs.num}:`, hs.pos.map(v=>v.toFixed(3)));
                             
-                            // Visual cue of success
                             el.style.boxShadow = "0 0 20px #10b981";
-                            setTimeout(() => { el.style.boxShadow = ""; }, 500);
-
+                            setTimeout(() => { el.style.boxShadow = ""; }, 600);
                         } else {
-                            // แจ้งเตือนเมื่อลากไปวางในอากาศ (ไม่โดนเนื้อโมเดล 3D)
-                            alert(`วางตำแหน่งไม่สำเร็จ! ❌\nจุดหมายเลข ${hs.num} ต้องวางอยู่บน "เนื้อโมเดล 3D" เท่านั้น (ถ้าวางบนอากาศหรือทะลุออกไป กรุณาลากวางใหม่ครับ)`);
+                            alert(`จุด #${hs.num} ต้องวางบนเนื้อโมเดล 3D เท่านั้น!`);
                         }
                     };
 
@@ -396,17 +490,21 @@
             });
         }
 
+        // --- Save / Lock to Firebase ---
         window.saveToFirebase = async function() {
             if(!currentModel) return;
             
             let outputCode = "";
-            const currentHotspots = htmlLabels.map(l => l.hsData);
+            const currentHotspots = htmlLabels.map(l => ({
+                num: l.hsData.num,
+                pos: l.hsData.pos.map(v => parseFloat(v.toFixed(3))),
+                name: l.hsData.name,
+                th: l.hsData.th,
+                desc: l.hsData.desc
+            }));
             
             currentHotspots.forEach(hs => {
-                const x = hs.pos[0].toFixed(2);
-                const y = hs.pos[1].toFixed(2);
-                const z = hs.pos[2].toFixed(2);
-                outputCode += `{ num: ${hs.num}, pos: [${x}, ${y}, ${z}], name: '${hs.name}', th: '${hs.th}', desc: '${hs.desc}' },\n`;
+                outputCode += `{ num: ${hs.num}, pos: [${hs.pos.join(', ')}], name: '${hs.name}', th: '${hs.th}' },\n`;
             });
 
             const exportBox = document.getElementById('export-box');
@@ -414,17 +512,20 @@
             exportBox.value = outputCode;
             
             try {
-                // อัปเกรด: บันทึกพาร์ทพิกัดขึ้น Firebase จริงๆ แล้ว!
                 await setDoc(doc(firestoreDB, "models", currentModel.id), { 
                     hotspots: currentHotspots,
-                    lastUpdated: new THREE.Clock().getElapsedTime()
+                    lineWidth: leaderLineWidth,
+                    lineColor: leaderLineColor,
+                    lastUpdated: new Date().toISOString()
                 }, { merge: true });
 
                 await navigator.clipboard.writeText(outputCode);
-                alert(`🚀 บันทึกขึ้น Cloud และคัดลอกลง Clipboard สำเร็จ!\n\nข้อมูลพิกัดถูกส่งไปที่ Firebase (Project: bio55-52faa) เรียบร้อยแล้วครับ!`);
+                // ล็อคโหมดแก้ไข
+                document.getElementById('edit-mode-toggle').checked = false;
+                alert(`🔒 บันทึก + ล็อคตำแหน่งสำเร็จ!\n\nพิกัดทั้ง ${currentHotspots.length} จุดถูกส่งไป Firebase เรียบร้อย\nและคัดลอกลง Clipboard แล้วครับ`);
             } catch (err) {
                 console.error("Firebase Error:", err);
-                alert(`🔥 จัดระเบียบพิกัดสำเร็จ (แต่เชื่อมต่อ Firebase พลาด)!\nก๊อปปี้โค้ดในช่องดำๆ ไปแปะทับในไฟล์ได้เลยครับ\nError: ${err.message}`);
+                alert(`จัดระเบียบพิกัดสำเร็จ (Firebase อาจยังไม่พร้อม)\nก๊อปโค้ดในช่องดำไปใส่ไฟล์ได้เลย\n${err.message}`);
                 exportBox.select();
             }
         }
@@ -436,6 +537,7 @@
             renderList(document.getElementById('search-input').value);
             document.getElementById('loading').classList.add('show');
             document.getElementById('model-overlay').style.opacity = 0;
+            document.getElementById('info-panel').classList.remove('visible');
             
             htmlLabels.forEach(lbl => lbl.element.remove());
             htmlLabels = [];
@@ -478,20 +580,66 @@
             const w = container.clientWidth;
             const h = container.clientHeight;
 
-            htmlLabels.forEach(lbl => {
-                if(lbl.isDragging) return;
+            // Clear SVG
+            leaderSVG.innerHTML = '';
 
+            // Calculate raw 2D positions from anchors
+            let rawPositions = [];
+            htmlLabels.forEach((lbl, idx) => {
                 const point = new THREE.Vector3();
                 lbl.anchor.getWorldPosition(point);
-                point.project(camera);
+                const projected = point.clone();
+                projected.project(camera);
 
-                if (point.z > 1) {
-                    lbl.element.style.opacity = 0;
+                const anchorX = (projected.x * 0.5 + 0.5) * w;
+                const anchorY = (projected.y * -0.5 + 0.5) * h;
+                const behind = projected.z > 1;
+
+                rawPositions.push({ x: anchorX, y: anchorY, behind, anchorX, anchorY });
+            });
+
+            // Auto-offset badges so they don't overlap (push apart)
+            const badgePositions = rawPositions.map(p => ({ x: p.x, y: p.y }));
+            const resolved = resolveOverlaps(badgePositions);
+
+            htmlLabels.forEach((lbl, idx) => {
+                if(lbl.isDragging) return;
+
+                const rp = rawPositions[idx];
+                const bp = resolved[idx];
+
+                if (rp.behind) {
+                    lbl.element.style.opacity = '0';
                 } else {
-                    lbl.element.style.opacity = 1;
-                    const x = (point.x * 0.5 + 0.5) * w;
-                    const y = (point.y * -0.5 + 0.5) * h;
-                    lbl.element.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+                    lbl.element.style.opacity = '1';
+                    lbl.element.style.transform = `translate(-50%, -50%) translate(${bp.x}px, ${bp.y}px)`;
+
+                    // Draw leader line from badge to anchor point
+                    const dx = bp.x - rp.anchorX;
+                    const dy = bp.y - rp.anchorY;
+                    const lineDist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (lineDist > 5) {
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', rp.anchorX);
+                        line.setAttribute('y1', rp.anchorY);
+                        line.setAttribute('x2', bp.x);
+                        line.setAttribute('y2', bp.y);
+                        line.setAttribute('stroke', leaderLineColor);
+                        line.setAttribute('stroke-width', leaderLineWidth);
+                        line.setAttribute('stroke-opacity', '0.7');
+                        line.setAttribute('stroke-linecap', 'round');
+                        leaderSVG.appendChild(line);
+
+                        // Small dot at anchor  
+                        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        dot.setAttribute('cx', rp.anchorX);
+                        dot.setAttribute('cy', rp.anchorY);
+                        dot.setAttribute('r', leaderLineWidth + 1);
+                        dot.setAttribute('fill', leaderLineColor);
+                        dot.setAttribute('fill-opacity', '0.9');
+                        leaderSVG.appendChild(dot);
+                    }
                 }
             });
         }
@@ -526,14 +674,7 @@
         }
         document.getElementById('search-input').addEventListener('input', (e) => renderList(e.target.value));
 
-        window.openModal = function() {
-            if(!currentModel) return;
-            document.getElementById('m-th-title').innerText = currentModel.thName;
-            document.getElementById('m-en-title').innerText = currentModel.enName;
-            document.getElementById('m-desc').innerHTML = currentModel.fullDesc;
-            document.getElementById('info-modal').classList.add('show');
-        }
-        window.closeModal = function() { document.getElementById('info-modal').classList.remove('show'); }
+        window.closeModal = function() { document.getElementById('info-panel').classList.remove('visible'); }
 
         // Start
         renderList();
