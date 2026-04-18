@@ -2,194 +2,15 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Medical Explore</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #040914;
-            --panel-bg: rgba(10, 15, 30, 0.65);
-            --border: rgba(255,255,255,0.08);
-            --text-main: #f8fafc;
-            --text-sub: #94a3b8;
-            --accent: #0ea5e9;
-            --accent-glow: rgba(14, 165, 233, 0.6);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', 'Kanit', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-        }
-
-        .bg-animation {
-            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.1) 0%, transparent 60%),
-                        radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
-            animation: rotateBg 30s linear infinite; z-index: -1; pointer-events: none;
-        }
-        @keyframes rotateBg { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Sidebar */
-        #sidebar {
-            width: 350px; background: var(--panel-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10;
-        }
-        .sidebar-header { padding: 2rem 1.5rem 1rem 1.5rem; }
-        .logo { font-size: 1.5rem; font-weight: 600; color: #fff; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 10px;}
-        .sub-logo { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 1.5rem;}
-        
-        .search-box { position: relative; width: 100%; }
-        .search-box input {
-            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: white; padding: 12px 15px 12px 40px; border-radius: 8px; font-family: inherit;
-            font-size: 0.95rem; outline: none; transition: 0.3s;
-        }
-        .search-box input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
-        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-sub); }
-
-        #model-list { flex-grow: 1; overflow-y: auto; padding: 0 1rem; }
-        #model-list::-webkit-scrollbar { width: 4px; }
-        #model-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-
-        .model-card {
-            background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px;
-            padding: 1rem; margin-bottom: 12px; cursor: pointer; display: flex; gap: 15px; transition: all 0.3s ease;
-        }
-        .model-card:hover { transform: translateY(-3px); border-color: rgba(14, 165, 233, 0.4); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        .model-card.active { background: rgba(14, 165, 233, 0.1); border-color: var(--accent); }
-        .model-icon {
-            font-size: 24px; width: 50px; height: 50px; background: rgba(0,0,0,0.4); border-radius: 10px;
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.05);
-        }
-        .model-info h3 { font-size: 1.05rem; font-weight: 500; margin-bottom: 4px; }
-        .model-info p { font-size: 0.85rem; color: var(--text-sub); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-
-        /* Main View */
-        #main-view { flex-grow: 1; position: relative; background: transparent; overflow: hidden; }
-        #three-canvas { width: 100%; height: 100%; outline: none; cursor: grab; }
-        #three-canvas:active { cursor: grabbing; }
-
-        /* SVG leader lines overlay */
-        #leader-svg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 19;
-        }
-
-        /* Number Badges */
-        .hs-badge {
-            position: absolute;
-            top: 0; left: 0;
-            width: 32px; height: 32px;
-            background: linear-gradient(135deg, rgba(2, 132, 199, 0.95), rgba(14, 165, 233, 0.95));
-            border: 2px solid rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            color: white; font-weight: 700; font-size: 0.9rem;
-            cursor: pointer; pointer-events: auto;
-            box-shadow: 0 0 12px rgba(14, 165, 233, 0.5);
-            transform: translate(-50%, -50%); 
-            z-index: 21;
-            opacity: 0;
-            user-select: none;
-            touch-action: none;
-            transition: background 0.2s, box-shadow 0.2s;
-        }
-        .hs-badge.dragging { transition: none !important; }
-        .hs-badge:not(.dragging):hover {
-            background: linear-gradient(135deg, #059669, #10b981); 
-            border-color: white;
-            box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
-        }
-        .hs-badge.active-badge {
-            background: linear-gradient(135deg, #f59e0b, #eab308);
-            border-color: #fff;
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
-        }
-
-        /* Controls Overlay */
-        #model-overlay {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(10, 15, 30, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            padding: 12px 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12);
-            text-align: center; opacity: 0; transition: opacity 0.5s;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px;
-            z-index: 40; pointer-events: none;
-        }
-        #model-overlay h2 { font-size: 1.1rem; font-weight: 500;}
-
-        /* Info Panel (replaces blurry modal) */
-        #info-panel {
-            position: absolute; top: 20px; right: 20px; width: 340px;
-            background: rgba(8, 15, 35, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 16px;
-            padding: 0; z-index: 45; pointer-events: auto;
-            transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            overflow: hidden;
-        }
-        #info-panel.visible { transform: translateX(0); }
-        .panel-accent { height: 4px; background: linear-gradient(to right, #0ea5e9, #a855f7, #ec4899); }
-        .panel-inner { padding: 20px; }
-        .panel-num {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 30px; height: 30px; border-radius: 50%; font-weight: 700; font-size: 0.9rem;
-            background: linear-gradient(135deg, #0284c7, #0ea5e9); color: white; margin-right: 10px;
-            vertical-align: middle;
-        }
-        .panel-th { font-size: 1.3rem; font-weight: 600; color: #fff; margin-bottom: 4px; display: inline; vertical-align: middle; }
-        .panel-en { font-size: 0.85rem; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; margin-top: 6px; }
-        .panel-desc { font-size: 0.92rem; line-height: 1.7; color: #cbd5e1; }
-        .panel-close {
-            position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.08); border: none; color: white;
-            width: 28px; height: 28px; border-radius: 50%; cursor: pointer; transition: 0.2s; font-size: 0.8rem;
-        }
-        .panel-close:hover { background: #ef4444; }
-
-        /* Admin UI */
-        #admin-panel {
-            position: absolute; bottom: 80px; right: 20px; z-index: 50;
-            background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px);
-            border: 1px solid var(--accent); padding: 16px; border-radius: 14px;
-            display: none; flex-direction: column; gap: 10px; width: 280px;
-        }
-        #admin-panel.active { display: flex; }
-        .admin-title { font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
-        .edit-switch { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #cbd5e1;}
-
-        /* Custom range and color inputs */
-        .admin-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #94a3b8; }
-        .admin-row label { min-width: 70px; }
-        .admin-row input[type="range"] { flex: 1; accent-color: var(--accent); }
-        .admin-row input[type="color"] { width: 30px; height: 24px; border: none; border-radius: 4px; cursor: pointer; background: transparent; }
-        
-        .save-btn {
-            background: #10b981; color: white; border: none; padding: 9px 15px; border-radius: 8px;
-            cursor: pointer; font-family: inherit; font-weight: 600; font-size: 0.85rem; transition: 0.2s;
-        }
-        .save-btn:hover { background: #059669; }
-        
-        .dev-badge {
-            position: absolute; bottom: 25px; right: 20px; background: rgba(0,0,0,0.6);
-            padding: 6px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; color: #94a3b8;
-            z-index: 49; font-size: 0.8rem; transition: 0.2s;
-        }
-        .dev-badge:hover { color: #fff; border-color: var(--accent); }
-
-        #loading {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(4, 9, 20, 0.8); backdrop-filter: blur(5px);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 55; transition: 0.4s; pointer-events: none; opacity: 0;
-        }
-        #loading.show { opacity: 1; pointer-events: auto; }
-        .spinner { width: 45px; height: 45px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;}
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BioExplore 3D - ระบบวิเคราะห์กายวิภาค</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- Three.js & OrbitControls -->
     <script type="importmap">
         {
             "imports": {
@@ -198,96 +19,197 @@
             }
         }
     </script>
+
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #0ea5e9;
+            --glass: rgba(15, 23, 42, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Prompt', 'Inter', sans-serif; }
+        body { background: #020617; color: #f8fafc; overflow: hidden; height: 100vh; width: 100vw; }
+
+        /* Animation backgrounds */
+        .bg-animation {
+            position: fixed; top: 0; left: 0; width: 200%; height: 200%;
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%);
+            z-index: -1; opacity: 0.5;
+        }
+
+        /* --- Sidebar --- */
+        #sidebar {
+            position: fixed; left: 0; top: 0; bottom: 0; width: 320px;
+            background: var(--glass); backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border); z-index: 1000;
+            display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #menu-toggle {
+            position: fixed; top: 15px; left: 15px; z-index: 1100;
+            background: var(--accent); color: white; border: none;
+            width: 50px; height: 50px; border-radius: 12px; cursor: pointer;
+            display: none; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3); font-size: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            #sidebar { width: 280px; transform: translateX(-100%); }
+            #sidebar.active { transform: translateX(0); }
+            #menu-toggle { display: flex; }
+        }
+
+        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid var(--glass-border); }
+        .logo { font-size: 1.4rem; font-weight: 800; background: linear-gradient(90deg, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+        .sub-logo { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+
+        .search-box { position: relative; margin-top: 15px; }
+        #search-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 10px 10px 10px 35px; border-radius: 12px; color: white; font-size: 0.85rem; }
+
+        #model-list { flex: 1; overflow-y: auto; padding: 15px; }
+        .model-item {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid transparent; 
+            border-radius: 16px; padding: 15px; margin-bottom: 12px; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; gap: 15px;
+        }
+        .model-item:hover { background: rgba(255, 255, 255, 0.06); }
+        .model-item.active { background: rgba(14, 165, 233, 0.1); border-color: var(--accent); }
+        .model-icon { width: 45px; height: 45px; background: rgba(0,0,0,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+        .model-info h3 { font-size: 0.95rem; margin-bottom: 4px; }
+        .model-info p { font-size: 0.75rem; color: #64748b; line-height: 1.3; }
+
+        /* --- Main View --- */
+        #main-view { position: relative; width: 100%; height: 100vh; transition: margin-left 0.3s; }
+        @media (min-width: 1025px) { #main-view { margin-left: 320px; width: calc(100% - 320px); } }
+
+        #three-canvas { width: 100%; height: 100%; cursor: grab; }
+        #three-canvas:active { cursor: grabbing; }
+
+        /* --- Hotspots --- */
+        .hotspot-label {
+            position: absolute; width: 34px; height: 34px; background: var(--accent);
+            color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; cursor: pointer; 
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.4);
+            border: 2px solid white; pointer-events: auto; user-select: none; transition: transform 0.2s;
+            z-index: 10;
+        }
+        @media (max-width: 768px) { .hotspot-label { width: 42px; height: 42px; font-size: 18px; } }
+        .hotspot-label.active { background: #f43f5e; transform: scale(1.15); box-shadow: 0 0 25px rgba(244, 63, 94, 0.6); }
+
+        #leader-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+
+        /* --- Info Panel --- */
+        #info-panel {
+            position: fixed; right: 25px; top: 25px; width: 340px;
+            background: var(--glass); backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            z-index: 1200; transform: translateX(500px); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            padding: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        #info-panel.visible { transform: translateX(0); }
+
+        @media (max-width: 768px) {
+            #info-panel {
+                left: 0; right: 0; bottom: 0; top: auto; width: 100%;
+                border-radius: 30px 30px 0 0; transform: translateY(100%);
+                padding-bottom: 40px; border: none; border-top: 1px solid var(--glass-border);
+            }
+            #info-panel.visible { transform: translateY(0); }
+        }
+
+        .panel-accent { position: absolute; top: 0; left: 25px; right: 25px; height: 4px; background: var(--accent); border-radius: 0 0 4px 4px; }
+        .panel-close { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #64748b; font-size: 22px; cursor: pointer; padding: 5px; }
+        .panel-num { width: 40px; height: 40px; background: var(--accent); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; margin-right: 12px; color: white; }
+        .panel-th { font-size: 1.3rem; font-weight: 700; color: #fff; vertical-align: middle; }
+        .panel-en { display: block; font-size: 0.85rem; color: var(--accent); font-weight: 600; margin: 15px 0 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .panel-desc { line-height: 1.6; color: #cbd5e1; font-size: 0.95rem; }
+
+        /* --- Admin UI --- */
+        .dev-badge { position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: #64748b; font-size: 0.8rem; cursor: pointer; z-index: 100; backdrop-filter: blur(10px); }
+        #admin-panel {
+            position: fixed; bottom: 80px; right: 20px; width: 280px;
+            background: var(--glass); backdrop-filter: blur(20px); border-radius: 20px;
+            border: 1px solid var(--glass-border); padding: 20px; z-index: 100;
+            transform: scale(0.9) translateY(20px); opacity: 0; pointer-events: none; transition: all 0.3s;
+        }
+        #admin-panel.active { transform: scale(1) translateY(0); opacity: 1; pointer-events: auto; }
+
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #020617; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+        #loading.show { opacity: 1; pointer-events: auto; }
+        .spinner { width: 45px; height: 45px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;}
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
-
     <div class="bg-animation"></div>
+
+    <button id="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">☰</button>
 
     <div id="sidebar">
         <div class="sidebar-header">
             <div class="logo">🧬 BioExplore 3D</div>
-            <div class="sub-logo">ระบบวิเคราะห์จุดกายวิภาคเสมือนจริง</div>
+            <div class="sub-logo">ระบบวิเคราะห์กายวิภาคเสมือนจริง</div>
             <div class="search-box">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="search-input" placeholder="ค้นหา... (เช่น เซลล์, สมอง)">
+                <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.4;">🔍</span>
+                <input type="text" id="search-input" placeholder="ค้นหาโมเดล...">
             </div>
         </div>
         <div id="model-list"></div>
     </div>
 
     <div id="main-view">
-        <div id="loading"><div class="spinner"></div><div id="loading-text" style="color: #94a3b8;">กำลังประกอบโมเดล 3D...</div></div>
-        
-        <!-- SVG for leader lines -->
+        <div id="loading"><div class="spinner"></div><div style="color: grey;">กำลังโหลดข้อมูล 3D...</div></div>
+        <canvas id="three-canvas"></canvas>
         <svg id="leader-svg"></svg>
-        
-        <div id="model-overlay">
-            <h2 id="ov-title">Select a Model</h2>
-            <p style="font-size: 0.8rem; color: #cbd5e1;">(คลิกตัวเลขเพื่ออ่านข้อมูล)</p>
-        </div>
 
-        <!-- Info Panel (slides in from right, no blur overlay) -->
         <div id="info-panel">
             <div class="panel-accent"></div>
-            <button class="panel-close" onclick="closeInfoPanel()">✕</button>
-            <div class="panel-inner">
-                <div style="margin-bottom: 10px;">
-                    <span class="panel-num" id="p-num">1</span>
-                    <span class="panel-th" id="p-th">--</span>
+            <button class="panel-close" onclick="closeInfoPanel()">×</button>
+            <div id="info-content">
+                <div style="display: flex; align-items: center;">
+                    <div class="panel-num" id="info-num">1</div>
+                    <span class="panel-th" id="info-th">ชื่อภาษาไทย</span>
                 </div>
-                <div class="panel-en" id="p-en">--</div>
-                <div class="panel-desc" id="p-desc">--</div>
+                <span class="panel-en" id="info-en">ENGLISH NAME</span>
+                <div class="panel-desc" id="info-desc">คำอธิบายทางวิชาการ</div>
             </div>
         </div>
 
-        <button class="dev-badge" onclick="document.getElementById('admin-panel').classList.toggle('active')">🔧 Admin</button>
+        <div class="dev-badge" onclick="document.getElementById('admin-panel').classList.toggle('active')">🔧 Admin Mode</div>
         <div id="admin-panel">
-            <div class="admin-title">⚙️ ตั้งค่าป้ายกำกับ</div>
+            <div class="admin-title">บันทึกข้อมูลไปยัง CLOUD</div>
             <label class="edit-switch">
-                <input type="checkbox" id="edit-mode-toggle"> <span>โหมดลากย้ายจุด (Edit Mode)</span>
+                <input type="checkbox" id="edit-mode"> 
+                <span>เปิดโหมดแก้ไข (ลากจุดได้)</span>
             </label>
-            <div class="admin-row">
-                <label>ความหนาเส้น</label>
-                <input type="range" id="line-width" min="1" max="6" value="2" step="0.5">
-                <span id="line-width-val">2</span>
+            <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 10px;">
+                * ในโหมดแก้ไข Double Click บนโมเดลเพื่อสร้างจุดใหม่
             </div>
-            <div class="admin-row">
-                <label>สีเส้น</label>
-                <input type="color" id="line-color" value="#0ea5e9">
-            </div>
-            <button class="save-btn" onclick="saveToFirebase()">☁️ บันทึกพิกัด + ล็อค</button>
-            <textarea id="export-box" style="display:none; width:100%; height:70px; margin-top:3px; background: rgba(0,0,0,0.5); color:#a7f3d0; border:1px solid #10b981; border-radius:4px; padding:5px; font-size:9px; resize:none;" readonly></textarea>
-            <p id="edit-hint" style="display:none; font-size: 0.7rem; color: #fbbf24; background: rgba(251, 191, 36, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(251, 191, 36, 0.2); margin-top: 5px;">
-                💡 <b>วิธีเพิ่มจุดใหม่:</b> ดับเบิลคลิกที่ตัวโมเดล 3D ในจุดที่ต้องการได้เลยครับ
-            </p>
+            <button class="save-btn" id="save-firebase-btn">SAVE TO FIREBASE</button>
         </div>
-        
-        <div id="three-canvas"></div>
     </div>
 
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        
-        // --- FIREBASE SDK ---
+
+        // Firebase Setup
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
         const firebaseConfig = {
-          apiKey: "AIzaSyCNNzRiZWjbiyvCe5ixn7w-jVxppyk2V2I",
-          authDomain: "bio55-52faa.firebaseapp.com",
-          projectId: "bio55-52faa",
-          storageBucket: "bio55-52faa.firebasestorage.app",
-          messagingSenderId: "491773325338",
-          appId: "1:491773325338:web:12d68fe382d39d2aeb21a3",
-          measurementId: "G-4972KR2M5S"
+            authDomain: "bio55-52faa.firebaseapp.com",
+            projectId: "bio55-52faa",
+            storageBucket: "bio55-52faa.appspot.com",
+            messagingSenderId: "338954495576",
+            appId: "1:338954495576:web:651c6b306443c224213d2a"
         };
-        
-        const fireApp = initializeApp(firebaseConfig);
-        const firestoreDB = getFirestore(fireApp);
+        const app = initializeApp(firebaseConfig);
+        const firestoreDB = getFirestore(app);
 
-        // --- DATABASE ---
         const db = [
             { 
                 id: 'neuron', 
@@ -335,432 +257,240 @@
 
         let currentModel = null;
         let activeSceneMesh = null;
-        let htmlLabels = []; 
-        let baseSizeGlobal = new THREE.Vector3(1,1,1);
-        let activeBadgeIndex = -1;
-
-        // Leader line config
-        let leaderLineWidth = 2;
-        let leaderLineColor = '#0ea5e9';
-
+        let htmlLabels = [];
+        let leaderLines = [];
         const container = document.getElementById('three-canvas');
         const leaderSVG = document.getElementById('leader-svg');
+
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-        camera.position.set(0, 0, 15);
+        camera.position.set(0, 0, 12);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ canvas: container, antialias: true, alpha: true });
         renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
-        container.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.minDistance = 2; controls.maxDistance = 30;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
-        scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-        dirLight.position.set(5, 5, 5);
-        scene.add(dirLight);
-        const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        backLight.position.set(-5, -3, -5);
-        scene.add(backLight);
+        const light1 = new THREE.DirectionalLight(0xffffff, 2.5); light1.position.set(10, 10, 10); scene.add(light1);
+        const light2 = new THREE.DirectionalLight(0x0ea5e9, 1.5); light2.position.set(-10, -5, -10); scene.add(light2);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+        const loader = new GLTFLoader();
 
-        // --- Admin controls ---
-        document.getElementById('line-width').addEventListener('input', (e) => {
-            leaderLineWidth = parseFloat(e.target.value);
-            document.getElementById('line-width-val').textContent = leaderLineWidth;
-        });
-        document.getElementById('line-color').addEventListener('input', (e) => {
-            leaderLineColor = e.target.value;
-        });
-
-        // --- Info Panel (no blur, shows alongside 3D) ---
-        window.closeInfoPanel = function() {
-            document.getElementById('info-panel').classList.remove('visible');
-            // Remove highlight from all badges
-            htmlLabels.forEach(l => l.element.classList.remove('active-badge'));
-            activeBadgeIndex = -1;
-        }
-
-        function showInfoPanel(hs) {
-            // Highlight the active badge, remove from others
-            htmlLabels.forEach(l => l.element.classList.remove('active-badge'));
-            const idx = htmlLabels.findIndex(l => l.hsData.num === hs.num);
-            if (idx >= 0) {
-                htmlLabels[idx].element.classList.add('active-badge');
-                activeBadgeIndex = idx;
-            }
-
-            document.getElementById('p-num').textContent = hs.num;
-            document.getElementById('p-th').textContent = hs.th;
-            document.getElementById('p-en').textContent = hs.name;
-            document.getElementById('p-desc').innerHTML = hs.desc;
-            document.getElementById('info-panel').classList.add('visible');
-        }
-
-        // --- Anti-Overlap: offset badges that are too close ---
-        function resolveOverlaps(positions) {
-            const minDist = 38; // minimum pixel distance between badges
-            for (let i = 0; i < positions.length; i++) {
-                for (let j = i + 1; j < positions.length; j++) {
-                    const dx = positions[j].x - positions[i].x;
-                    const dy = positions[j].y - positions[i].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < minDist && dist > 0) {
-                        const push = (minDist - dist) / 2;
-                        const angle = Math.atan2(dy, dx);
-                        positions[j].x += Math.cos(angle) * push;
-                        positions[j].y += Math.sin(angle) * push;
-                        positions[i].x -= Math.cos(angle) * push;
-                        positions[i].y -= Math.sin(angle) * push;
-                    }
-                }
-            }
-            return positions;
-        }
-
-        function createHotspots(modelData, baseSize) {
-            htmlLabels.forEach(lbl => lbl.element.remove());
-            htmlLabels = [];
-            activeBadgeIndex = -1;
-            document.getElementById('info-panel').classList.remove('visible');
-
-            if(!modelData.hotspots) return;
-
-            modelData.hotspots.forEach(hs => {
-                const el = document.createElement('div');
-                el.className = 'hs-badge';
-                el.innerText = hs.num;
-                
-                // คลิกเปิด Info Panel (ไม่เบลอ ยังเห็นโมเดลอยู่)
-                el.onclick = (e) => {
-                    const isEditMode = document.getElementById('edit-mode-toggle').checked;
-                    if (isEditMode) return;
-                    showInfoPanel(hs);
+        function renderList(search = '') {
+            const list = document.getElementById('model-list');
+            list.innerHTML = '';
+            db.filter(m => m.name.toLowerCase().includes(search.toLowerCase())).forEach(model => {
+                const div = document.createElement('div');
+                div.className = `model-item ${currentModel?.id === model.id ? 'active' : ''}`;
+                div.innerHTML = `
+                    <div class="model-icon">${model.icon}</div>
+                    <div class="model-info">
+                        <h3>${model.name}</h3>
+                        <p>${model.desc}</p>
+                    </div>
+                `;
+                div.onclick = () => {
+                    if (window.innerWidth <= 1024) document.getElementById('sidebar').classList.remove('active');
+                    loadModelIntoScene(model);
                 };
-
-                document.getElementById('main-view').appendChild(el);
-
-                const anchor = new THREE.Object3D();
-                anchor.position.set(
-                    (hs.pos[0] * baseSize.x) / 2,
-                    (hs.pos[1] * baseSize.y) / 2,
-                    (hs.pos[2] * baseSize.z) / 2
-                );
-                activeSceneMesh.add(anchor);
-
-                const labelObj = { element: el, anchor: anchor, hsData: hs, isDragging: false };
-                htmlLabels.push(labelObj);
-
-                // --- EDIT MODE: Drag and Drop ---
-                el.onpointerdown = (e) => {
-                    const isEditMode = document.getElementById('edit-mode-toggle').checked;
-                    if (!isEditMode) return;
-
-                    e.preventDefault();
-                    e.stopPropagation();
-                    labelObj.isDragging = true;
-                    el.classList.add('dragging');
-                    el.style.cursor = 'grabbing';
-                    controls.enabled = false;
-                    
-                    el.setPointerCapture(e.pointerId);
-
-                    let tempX = 0, tempY = 0;
-
-                    const onPointerMove = (ev) => {
-                        const rect = container.getBoundingClientRect();
-                        tempX = ev.clientX - rect.left;
-                        tempY = ev.clientY - rect.top;
-                        el.style.transform = `translate(-50%, -50%) translate(${tempX}px, ${tempY}px)`;
-                    };
-
-                    const onPointerUp = (ev) => {
-                        labelObj.isDragging = false;
-                        el.classList.remove('dragging');
-                        el.style.cursor = 'pointer';
-                        controls.enabled = true;
-                        
-                        el.releasePointerCapture(ev.pointerId);
-                        el.removeEventListener('pointermove', onPointerMove);
-                        el.removeEventListener('pointerup', onPointerUp);
-
-                        const rect = container.getBoundingClientRect();
-                        mouse.x = (tempX / container.clientWidth) * 2 - 1;
-                        mouse.y = -(tempY / container.clientHeight) * 2 + 1;
-                        raycaster.setFromCamera(mouse, camera);
-
-                        const intersects = raycaster.intersectObject(activeSceneMesh, true);
-                        if (intersects.length > 0) {
-                            const hitWorld = intersects[0].point;
-                            anchor.position.copy(activeSceneMesh.worldToLocal(hitWorld.clone()));
-                            
-                            hs.pos[0] = (anchor.position.x * 2) / baseSize.x;
-                            hs.pos[1] = (anchor.position.y * 2) / baseSize.y;
-                            hs.pos[2] = (anchor.position.z * 2) / baseSize.z;
-                            console.log(`Updated #${hs.num}:`, hs.pos.map(v=>v.toFixed(3)));
-                            
-                            el.style.boxShadow = "0 0 20px #10b981";
-                            setTimeout(() => { el.style.boxShadow = ""; }, 600);
-                        } else {
-                            alert(`จุด #${hs.num} ต้องวางบนเนื้อโมเดล 3D เท่านั้น!`);
-                        }
-                    };
-
-                    el.addEventListener('pointermove', onPointerMove);
-                    el.addEventListener('pointerup', onPointerUp);
-                };
+                list.appendChild(div);
             });
-        }
-
-        // --- เพิ่มจุดใหม่จากการ Double Click ---
-        container.ondblclick = (e) => {
-            const isEditMode = document.getElementById('edit-mode-toggle').checked;
-            if (!isEditMode || !activeSceneMesh) return;
-
-            const rect = container.getBoundingClientRect();
-            mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
-            mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-
-            const intersects = raycaster.intersectObject(activeSceneMesh, true);
-            if (intersects.length > 0) {
-                const hitWorld = intersects[0].point;
-                const localPos = activeSceneMesh.worldToLocal(hitWorld.clone());
-
-                // คำนวณเลขหมายเลขถัดไป
-                const nextNum = htmlLabels.length > 0 ? Math.max(...htmlLabels.map(l => l.hsData.num)) + 1 : 1;
-                
-                // สร้างพิกัด Norm [X, Y, Z]
-                const normPos = [
-                    (localPos.x * 2) / baseSizeGlobal.x,
-                    (localPos.y * 2) / baseSizeGlobal.y,
-                    (localPos.z * 2) / baseSizeGlobal.z
-                ];
-
-                const newHs = {
-                    num: nextNum,
-                    pos: normPos,
-                    name: 'New Part',
-                    th: 'ส่วนใหม่',
-                    desc: 'ระบุข้อมูลเพิ่มเติมได้ในโค้ด'
-                };
-
-                currentModel.hotspots.push(newHs);
-                createHotspots(currentModel, baseSizeGlobal);
-                console.log("Added new hotspot:", newHs);
-            }
-        };
-
-        // แสดง Hint เมื่อเปิด Edit Mode
-        document.getElementById('edit-mode-toggle').addEventListener('change', (e) => {
-            const hint = document.getElementById('edit-hint');
-            if(hint) hint.style.display = e.target.checked ? 'block' : 'none';
-        });
-
-
-        // --- Save / Lock to Firebase ---
-        window.saveToFirebase = async function() {
-            if(!currentModel) return;
-            
-            let outputCode = "";
-            const currentHotspots = htmlLabels.map(l => ({
-                num: l.hsData.num,
-                pos: l.hsData.pos.map(v => parseFloat(v.toFixed(3))),
-                name: l.hsData.name,
-                th: l.hsData.th,
-                desc: l.hsData.desc
-            }));
-            
-            currentHotspots.forEach(hs => {
-                outputCode += `{ num: ${hs.num}, pos: [${hs.pos.join(', ')}], name: '${hs.name}', th: '${hs.th}' },\n`;
-            });
-
-            const exportBox = document.getElementById('export-box');
-            exportBox.style.display = 'block';
-            exportBox.value = outputCode;
-            
-            try {
-                await setDoc(doc(firestoreDB, "models", currentModel.id), { 
-                    hotspots: currentHotspots,
-                    lineWidth: leaderLineWidth,
-                    lineColor: leaderLineColor,
-                    lastUpdated: new Date().toISOString()
-                }, { merge: true });
-
-                await navigator.clipboard.writeText(outputCode);
-                // ล็อคโหมดแก้ไข
-                document.getElementById('edit-mode-toggle').checked = false;
-                alert(`🔒 บันทึก + ล็อคตำแหน่งสำเร็จ!\n\nพิกัดทั้ง ${currentHotspots.length} จุดถูกส่งไป Firebase เรียบร้อย\nและคัดลอกลง Clipboard แล้วครับ`);
-            } catch (err) {
-                console.error("Firebase Error:", err);
-                alert(`จัดระเบียบพิกัดสำเร็จ (Firebase อาจยังไม่พร้อม)\nก๊อปโค้ดในช่องดำไปใส่ไฟล์ได้เลย\n${err.message}`);
-                exportBox.select();
-            }
         }
 
         async function loadModelIntoScene(modelData) {
-            // ล้างของเก่าให้เกลี้ยงก่อนเสมอ
             if (activeSceneMesh) {
                 scene.remove(activeSceneMesh);
                 activeSceneMesh = null;
             }
-            
-            // ลบป้ายเก่าทิ้ง
-            htmlLabels.forEach(lbl => lbl.element.remove());
+            htmlLabels.forEach(l => l.element.remove());
             htmlLabels = [];
             leaderSVG.innerHTML = '';
             
             currentModel = modelData;
-            
-            // รีเซ็ตมุมกล้องให้มาเริ่มต้นใหม่
             controls.reset();
             camera.position.set(0, 0, 12);
-            
-            renderList(document.getElementById('search-input').value);
+            renderList();
+
             document.getElementById('loading').classList.add('show');
-            document.getElementById('model-overlay').style.opacity = 0;
-            document.getElementById('info-panel').classList.remove('visible');
-            
-            // ===== ดึงพิกัดที่บันทึกไว้จาก Firebase (ถ้ามี) =====
+
             try {
-                const savedDoc = await getDoc(doc(firestoreDB, "models", modelData.id));
-                if (savedDoc.exists()) {
-                    const savedData = savedDoc.data();
-                    if (savedData.hotspots && savedData.hotspots.length > 0) {
-                        // เอาพิกัดจาก Cloud มาทับค่าเริ่มต้นในโค้ด
-                        savedData.hotspots.forEach(savedHs => {
-                            const localHs = modelData.hotspots.find(h => h.num === savedHs.num);
-                            if (localHs && savedHs.pos) {
-                                localHs.pos = [...savedHs.pos]; // ทับพิกัดจาก Firebase
-                            }
-                        });
-                        console.log("✅ โหลดพิกัดจาก Firebase สำเร็จ:", modelData.id);
-                    }
-                    // โหลดค่าเส้น (ถ้ามี)
-                    if (savedData.lineWidth) {
-                        leaderLineWidth = savedData.lineWidth;
-                        document.getElementById('line-width').value = leaderLineWidth;
-                        document.getElementById('line-width-val').textContent = leaderLineWidth;
-                    }
-                    if (savedData.lineColor) {
-                        leaderLineColor = savedData.lineColor;
-                        document.getElementById('line-color').value = leaderLineColor;
-                    }
-                }
-            } catch (e) {
-                console.warn("ไม่สามารถดึงข้อมูลจาก Firebase ได้ (ใช้ค่าเริ่มต้น):", e.message);
-            }
+                const docRef = doc(firestoreDB, "models", modelData.id);
+                const saved = await getDoc(docRef);
+                if (saved.exists()) modelData.hotspots = saved.data().hotspots;
+            } catch (e) { console.warn("Load failed", e); }
 
-            const loader = new GLTFLoader();
-            loader.load(`./${modelData.file}`, (gltf) => {
+            loader.load(modelData.file, (gltf) => {
                 activeSceneMesh = gltf.scene;
-
+                
+                // Centering
                 const box = new THREE.Box3().setFromObject(activeSceneMesh);
                 const center = box.getCenter(new THREE.Vector3());
-                baseSizeGlobal = box.getSize(new THREE.Vector3());
+                activeSceneMesh.position.sub(center);
                 
-                activeSceneMesh.children.forEach(child => {
-                    child.position.sub(center);
-                });
-                
-                const maxDim = Math.max(baseSizeGlobal.x, baseSizeGlobal.y, baseSizeGlobal.z);
-                activeSceneMesh.scale.setScalar(8 / maxDim);
                 scene.add(activeSceneMesh);
-                
-                createHotspots(currentModel, baseSizeGlobal);
-
-                document.getElementById('ov-title').innerText = modelData.name;
-                document.getElementById('model-overlay').style.opacity = 1;
+                createHotspots(modelData.hotspots);
                 document.getElementById('loading').classList.remove('show');
-                
-            }, undefined, (err) => {
-                document.getElementById('loading-text').innerText = "❌ หาไฟล์ไม่พบ: " + modelData.file;
-                setTimeout(() => document.getElementById('loading').classList.remove('show'), 2000);
             });
         }
 
-        function updateHotspotPositions() {
-            if(!activeSceneMesh) return;
-            const w = container.clientWidth;
-            const h = container.clientHeight;
+        function createHotspots(hotspots) {
+            hotspots.forEach(h => {
+                const div = document.createElement('div');
+                div.className = 'hotspot-label';
+                div.innerHTML = h.num;
+                div.setAttribute('data-num', h.num);
+                document.body.appendChild(div);
 
-            // Clear SVG
-            leaderSVG.innerHTML = '';
+                let isDragging = false;
+                div.addEventListener('mousedown', (e) => {
+                    if (!document.getElementById('edit-mode').checked) return;
+                    isDragging = true;
+                    e.stopPropagation();
+                });
 
-            // Calculate raw 2D positions from anchors
-            let rawPositions = [];
-            htmlLabels.forEach((lbl, idx) => {
-                const point = new THREE.Vector3();
-                lbl.anchor.getWorldPosition(point);
-                const projected = point.clone();
-                projected.project(camera);
+                div.onclick = (e) => {
+                    if (isDragging) return;
+                    showInfo(h, div);
+                };
 
-                const anchorX = (projected.x * 0.5 + 0.5) * w;
-                const anchorY = (projected.y * -0.5 + 0.5) * h;
-                const behind = projected.z > 1;
-
-                rawPositions.push({ x: anchorX, y: anchorY, behind, anchorX, anchorY });
+                htmlLabels.push({ element: div, pos: new THREE.Vector3(...h.pos), data: h });
             });
+        }
 
-            // Auto-offset badges so they don't overlap (push apart)
-            const badgePositions = rawPositions.map(p => ({ x: p.x, y: p.y }));
-            const resolved = resolveOverlaps(badgePositions);
+        function showInfo(h, el) {
+            htmlLabels.forEach(l => l.element.classList.remove('active'));
+            el.classList.add('active');
+            
+            document.getElementById('info-num').innerText = h.num;
+            document.getElementById('info-th').innerText = h.th;
+            document.getElementById('info-en').innerText = h.name;
+            document.getElementById('info-desc').innerHTML = h.desc || 'ไม่มีคำอธิบายในขณะนี้';
+            document.getElementById('info-panel').classList.add('visible');
+        }
 
-            htmlLabels.forEach((lbl, idx) => {
-                if(lbl.isDragging) return;
+        window.closeInfoPanel = () => {
+            document.getElementById('info-panel').classList.remove('visible');
+            htmlLabels.forEach(l => l.element.classList.remove('active'));
+        };
 
-                const rp = rawPositions[idx];
-                const bp = resolved[idx];
+        // Handling Clicks on canvas to close or edit
+        container.addEventListener('click', () => {
+             if (window.innerWidth <= 1024) document.getElementById('sidebar').classList.remove('active');
+        });
 
-                if (rp.behind) {
-                    lbl.element.style.opacity = '0';
-                } else {
-                    lbl.element.style.opacity = '1';
-                    lbl.element.style.transform = `translate(-50%, -50%) translate(${bp.x}px, ${bp.y}px)`;
+        // Edit Mode: Double click to create
+        container.addEventListener('dblclick', (e) => {
+            if (!document.getElementById('edit-mode').checked) return;
+            
+            const rect = container.getBoundingClientRect();
+            const mouse = new THREE.Vector2(
+                ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                -((e.clientY - rect.top) / rect.height) * 2 + 1
+            );
 
-                    // Draw leader line from badge to anchor point
-                    const dx = bp.x - rp.anchorX;
-                    const dy = bp.y - rp.anchorY;
-                    const lineDist = Math.sqrt(dx*dx + dy*dy);
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(activeSceneMesh, true);
 
-                    if (lineDist > 5) {
-                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        // สร้างเส้นโค้ง Bezier แบบนุ่มนวล
-                        // ดึงจุดควบคุมออกไปทางด้านข้างเล็กน้อย
-                        const midX = (rp.anchorX + bp.x) / 2;
-                        const midY = (rp.anchorY + bp.y) / 2;
-                        
-                        // ก่ายโค้งเบาๆ
-                        const cp1x = rp.anchorX;
-                        const cp1y = midY;
-                        const cp2x = midX;
-                        const cp2y = bp.y;
+            if (intersects.length > 0) {
+                const point = intersects[0].point;
+                const localPoint = activeSceneMesh.worldToLocal(point.clone());
+                const nextNum = currentModel.hotspots.length > 0 ? Math.max(...currentModel.hotspots.map(h => h.num)) + 1 : 1;
+                
+                const newH = {
+                    num: nextNum,
+                    pos: [localPoint.x, localPoint.y, localPoint.z],
+                    name: 'New Spot',
+                    th: 'จุดใหม่',
+                    desc: 'คลิกเพื่อแก้ไขรายละเอียด'
+                };
+                
+                currentModel.hotspots.push(newH);
+                createHotspots([newH]);
+            }
+        });
 
-                        const d = `M ${rp.anchorX} ${rp.anchorY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${bp.x} ${bp.y}`;
-                        
-                        path.setAttribute('d', d);
-                        path.setAttribute('stroke', leaderLineColor);
-                        path.setAttribute('stroke-width', leaderLineWidth);
-                        path.setAttribute('stroke-opacity', '0.6');
-                        path.setAttribute('fill', 'none');
-                        path.setAttribute('stroke-linecap', 'round');
-                        leaderSVG.appendChild(path);
+        // Drag Logic
+        window.addEventListener('mousemove', (e) => {
+            const dragTarget = htmlLabels.find(l => l.isDragging);
+            if (!dragTarget) return;
 
-                        // Small dot at anchor  
-                        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        dot.setAttribute('cx', rp.anchorX);
-                        dot.setAttribute('cy', rp.anchorY);
-                        dot.setAttribute('r', parseFloat(leaderLineWidth) + 1.5);
-                        dot.setAttribute('fill', leaderLineColor);
-                        dot.setAttribute('fill-opacity', '0.9');
-                        leaderSVG.appendChild(dot);
-                    }
+            const rect = container.getBoundingClientRect();
+            const mouse = new THREE.Vector2(
+                ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                -((e.clientY - rect.top) / rect.height) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(activeSceneMesh, true);
+            if (intersects.length > 0) {
+                const pt = activeSceneMesh.worldToLocal(intersects[0].point.clone());
+                dragTarget.pos.copy(intersects[0].point);
+                dragTarget.data.pos = [pt.x, pt.y, pt.z];
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            htmlLabels.forEach(l => l.isDragging = false);
+        });
+
+        // Firebase Save
+        document.getElementById('save-firebase-btn').onclick = async () => {
+            if (!currentModel) return;
+            const btn = document.getElementById('save-firebase-btn');
+            btn.innerText = "กำลังบันทึก...";
+            try {
+                await setDoc(doc(firestoreDB, "models", currentModel.id), {
+                    hotspots: currentModel.hotspots
+                });
+                alert("บันทึกข้อมูลเรียบร้อย!");
+            } catch (e) { alert("Error: " + e.message); }
+            btn.innerText = "SAVE TO FIREBASE";
+        };
+
+        function updateHotspotPositions() {
+            leaderSVG.innerHTML = '';
+            htmlLabels.forEach(label => {
+                const wp = label.pos.clone();
+                if (activeSceneMesh) {
+                    // If stored as local (edit mode does this) we need to convert to world
+                    // But here label.pos is already in world space in the loop
+                }
+
+                const screenPos = wp.project(camera);
+                const x = (screenPos.x + 1) * container.clientWidth / 2;
+                const y = (-screenPos.y + 1) * container.clientHeight / 2;
+
+                // Simple check for "behind" camera
+                if (screenPos.z > 1) {
+                    label.element.style.display = 'none';
+                    return;
+                }
+                
+                label.element.style.display = 'flex';
+                label.element.style.left = `${x + (window.innerWidth <= 1024 ? 0 : 320) - 20}px`;
+                label.element.style.top = `${y - 20}px`;
+
+                // Draw curve if active
+                if (label.element.classList.contains('active')) {
+                    const rect = document.getElementById('info-panel').getBoundingClientRect();
+                    const targetX = (window.innerWidth <= 768) ? window.innerWidth / 2 : rect.left;
+                    const targetY = (window.innerWidth <= 768) ? rect.top : rect.top + 50;
+                    
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    const cp1x = x + (targetX - x) * 0.5;
+                    const d = `M ${x + (window.innerWidth <= 1024 ? 0 : 320)} ${y} C ${cp1x + (window.innerWidth <= 1024 ? 0 : 320)} ${y}, ${cp1x + (window.innerWidth <= 1024 ? 0 : 320)} ${targetY}, ${targetX} ${targetY}`;
+                    
+                    path.setAttribute("d", d);
+                    path.setAttribute("stroke", "#0ea5e9");
+                    path.setAttribute("stroke-width", "2");
+                    path.setAttribute("fill", "none");
+                    path.setAttribute("stroke-dasharray", "5,5");
+                    leaderSVG.appendChild(path);
                 }
             });
         }
@@ -769,38 +499,18 @@
             requestAnimationFrame(animate);
             controls.update(); 
             renderer.render(scene, camera);
-            updateHotspotPositions(); 
+            updateHotspotPositions();
         }
         animate();
 
         window.addEventListener('resize', () => {
-             camera.aspect = container.clientWidth / container.clientHeight;
-             camera.updateProjectionMatrix();
-             renderer.setSize(container.clientWidth, container.clientHeight);
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
         });
 
-        const listEl = document.getElementById('model-list');
-        window.handleCardClick = function(id) { const m = db.find(x=>x.id===id); if(m) loadModelIntoScene(m); }
-        function renderList(query = '') {
-            listEl.innerHTML = '';
-            const filtered = db.filter(m => m.name.toLowerCase().includes(query.toLowerCase()) || m.desc.toLowerCase().includes(query.toLowerCase()));
-            filtered.forEach(m => {
-                const isActive = currentModel && currentModel.id === m.id;
-                listEl.innerHTML += `
-                    <div class="model-card ${isActive ? 'active' : ''}" onclick="handleCardClick('${m.id}')">
-                        <div class="model-icon">${m.icon}</div>
-                        <div class="model-info"><h3>${m.name}</h3><p>${m.desc}</p></div>
-                    </div>`;
-            });
-        }
-        document.getElementById('search-input').addEventListener('input', (e) => renderList(e.target.value));
-
-        window.closeModal = function() { document.getElementById('info-panel').classList.remove('visible'); }
-
-        // Start
         renderList();
-        if(db.length > 0) loadModelIntoScene(db[0]);
-
+        loadModelIntoScene(db[0]);
     </script>
 </body>
 </html>
