@@ -650,22 +650,33 @@
                     const lineDist = Math.sqrt(dx*dx + dy*dy);
 
                     if (lineDist > 5) {
-                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                        line.setAttribute('x1', rp.anchorX);
-                        line.setAttribute('y1', rp.anchorY);
-                        line.setAttribute('x2', bp.x);
-                        line.setAttribute('y2', bp.y);
-                        line.setAttribute('stroke', leaderLineColor);
-                        line.setAttribute('stroke-width', leaderLineWidth);
-                        line.setAttribute('stroke-opacity', '0.7');
-                        line.setAttribute('stroke-linecap', 'round');
-                        leaderSVG.appendChild(line);
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        // สร้างเส้นโค้ง Bezier แบบนุ่มนวล
+                        // ดึงจุดควบคุมออกไปทางด้านข้างเล็กน้อย
+                        const midX = (rp.anchorX + bp.x) / 2;
+                        const midY = (rp.anchorY + bp.y) / 2;
+                        
+                        // ก่ายโค้งเบาๆ
+                        const cp1x = rp.anchorX;
+                        const cp1y = midY;
+                        const cp2x = midX;
+                        const cp2y = bp.y;
+
+                        const d = `M ${rp.anchorX} ${rp.anchorY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${bp.x} ${bp.y}`;
+                        
+                        path.setAttribute('d', d);
+                        path.setAttribute('stroke', leaderLineColor);
+                        path.setAttribute('stroke-width', leaderLineWidth);
+                        path.setAttribute('stroke-opacity', '0.6');
+                        path.setAttribute('fill', 'none');
+                        path.setAttribute('stroke-linecap', 'round');
+                        leaderSVG.appendChild(path);
 
                         // Small dot at anchor  
                         const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                         dot.setAttribute('cx', rp.anchorX);
                         dot.setAttribute('cy', rp.anchorY);
-                        dot.setAttribute('r', leaderLineWidth + 1);
+                        dot.setAttribute('r', parseFloat(leaderLineWidth) + 1.5);
                         dot.setAttribute('fill', leaderLineColor);
                         dot.setAttribute('fill-opacity', '0.9');
                         leaderSVG.appendChild(dot);
