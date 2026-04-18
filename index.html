@@ -591,22 +591,28 @@
         }
 
         async function loadModelIntoScene(modelData) {
-            if(currentModel && currentModel.id === modelData.id) return; 
+            // ล้างของเก่าให้เกลี้ยงก่อนเสมอ
+            if (activeSceneMesh) {
+                scene.remove(activeSceneMesh);
+                activeSceneMesh = null;
+            }
+            
+            // ลบป้ายเก่าทิ้ง
+            htmlLabels.forEach(lbl => lbl.element.remove());
+            htmlLabels = [];
+            leaderSVG.innerHTML = '';
+            
             currentModel = modelData;
+            
+            // รีเซ็ตมุมกล้องให้มาเริ่มต้นใหม่
+            controls.reset();
+            camera.position.set(0, 0, 12);
             
             renderList(document.getElementById('search-input').value);
             document.getElementById('loading').classList.add('show');
             document.getElementById('model-overlay').style.opacity = 0;
             document.getElementById('info-panel').classList.remove('visible');
             
-            htmlLabels.forEach(lbl => lbl.element.remove());
-            htmlLabels = [];
-
-            if(activeSceneMesh) {
-                scene.remove(activeSceneMesh);
-                activeSceneMesh = null;
-            }
-
             // ===== ดึงพิกัดที่บันทึกไว้จาก Firebase (ถ้ามี) =====
             try {
                 const savedDoc = await getDoc(doc(firestoreDB, "models", modelData.id));
