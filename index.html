@@ -1,219 +1,170 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reflex Arc 3D Simulation</title>
+    <title>3D Medical Explore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #030816;
-            --panel-bg: rgba(6, 15, 33, 0.85);
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            --glow-sensory: #fbbf24;
-            --glow-motor: #60a5fa;
-            --glow-pain: #ef4444;
-            --glow-inter: #a855f7;
+            --bg-color: #040914;
+            --panel-bg: rgba(10, 15, 30, 0.65);
+            --border: rgba(255,255,255,0.08);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --accent: #0ea5e9;
+            --accent-glow: rgba(14, 165, 233, 0.6);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
+            font-family: 'Inter', 'Kanit', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-            overflow: hidden;
-            width: 100vw;
             height: 100vh;
-        }
-
-        #canvas-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        .ui-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            pointer-events: none;
-            display: flex;
-            padding: 2rem;
-            justify-content: space-between;
-        }
-
-        .side-panel {
-            width: 350px;
-            background: var(--panel-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            pointer-events: auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        .header h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-
-        .header p {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            line-height: 1.5;
-        }
-
-        .steps-container {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            margin-top: 1rem;
-            flex-grow: 1;
-        }
-
-        .step-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 1rem;
-            transition: all 0.3s ease;
-            position: relative;
             overflow: hidden;
-        }
-
-        .step-card::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 4px;
-            background: transparent;
-            transition: all 0.3s ease;
-        }
-
-        .step-card h3 {
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
         }
 
-        .step-card p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
+        .bg-animation {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.1) 0%, transparent 60%),
+                        radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
+            animation: rotateBg 30s linear infinite; z-index: -1; pointer-events: none;
         }
+        @keyframes rotateBg { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Active States */
-        .step-card.active-1 { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); }
-        .step-card.active-1::before { background: var(--glow-pain); }
+        /* Sidebar */
+        #sidebar {
+            width: 350px; background: var(--panel-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10;
+        }
+        .sidebar-header { padding: 2rem 1.5rem 1rem 1.5rem; }
+        .logo { font-size: 1.5rem; font-weight: 600; color: #fff; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 10px;}
+        .sub-logo { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 1.5rem;}
         
-        .step-card.active-2 { background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3); }
-        .step-card.active-2::before { background: var(--glow-sensory); }
-        
-        .step-card.active-3 { background: rgba(168, 85, 247, 0.1); border-color: rgba(168, 85, 247, 0.3); }
-        .step-card.active-3::before { background: var(--glow-inter); }
-        
-        .step-card.active-4 { background: rgba(96, 165, 250, 0.1); border-color: rgba(96, 165, 250, 0.3); }
-        .step-card.active-4::before { background: var(--glow-motor); }
-        
-        .step-card.active-5 { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); transform: scale(1.02); }
-        .step-card.active-5::before { background: #fff; }
-
-        .controls {
-            margin-top: 1rem;
+        .search-box { position: relative; width: 100%; }
+        .search-box input {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 12px 15px 12px 40px; border-radius: 8px; font-family: inherit;
+            font-size: 0.95rem; outline: none; transition: 0.3s;
         }
+        .search-box input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-sub); }
 
-        button.primary-btn {
-            width: 100%;
-            padding: 1rem;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(135deg, var(--glow-pain) 0%, #b91c1c 100%);
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        #model-list { flex-grow: 1; overflow-y: auto; padding: 0 1rem; }
+        #model-list::-webkit-scrollbar { width: 4px; }
+        #model-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .model-card {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px;
+            padding: 1rem; margin-bottom: 12px; cursor: pointer; display: flex; gap: 15px; transition: all 0.3s ease;
         }
-
-        button.primary-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+        .model-card:hover { transform: translateY(-3px); border-color: rgba(14, 165, 233, 0.4); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .model-card.active { background: rgba(14, 165, 233, 0.1); border-color: var(--accent); }
+        .model-icon {
+            font-size: 24px; width: 50px; height: 50px; background: rgba(0,0,0,0.4); border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.05);
         }
+        .model-info h3 { font-size: 1.05rem; font-weight: 500; margin-bottom: 4px; }
+        .model-info p { font-size: 0.85rem; color: var(--text-sub); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-        button.primary-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
+        /* Main View */
+        #main-view { flex-grow: 1; position: relative; background: transparent; overflow: hidden; }
+        #three-canvas { width: 100%; height: 100%; outline: none; cursor: grab; }
+        #three-canvas:active { cursor: grabbing; }
 
-        #interneuron-label {
+        .hs-badge {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.75);
-            border: 1px solid var(--glow-inter);
-            color: #fff;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
-            z-index: 10;
-        }
-        
-        .indicator {
-            width: 10px;
-            height: 10px;
+            top: 0; left: 0;
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.9), rgba(14, 165, 233, 0.9));
+            border: 2px solid rgba(255, 255, 255, 0.8);
             border-radius: 50%;
-            display: inline-block;
+            display: flex; justify-content: center; align-items: center;
+            color: white; font-weight: 600; font-size: 1.1rem;
+            cursor: pointer; pointer-events: auto;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s linear; 
+            transform: translate(-50%, -50%); 
+            z-index: 20;
+            opacity: 0;
+            user-select: none;
+            touch-action: none; /* ป้องกันการเลื่อนหน้าจอมือถือตอนลาก */
         }
+        .hs-badge.dragging {
+            transition: none !important;
+        }
+        .hs-badge:not(.dragging):hover {
+            background: linear-gradient(135deg, #059669, #10b981); 
+            border-color: white;
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
+        }
+
+        /* Controls Overlay */
+        #model-overlay {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: rgba(10, 15, 30, 0.8); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            padding: 15px 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15);
+            text-align: center; opacity: 0; transition: opacity 0.5s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 10px;
+            z-index: 40; pointer-events: none;
+        }
+        #model-overlay h2 { font-size: 1.25rem; font-weight: 500;}
+
+        /* Admin UI */
+        #admin-panel {
+            position: absolute; top: 20px; right: 20px; z-index: 50;
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+            border: 1px solid var(--accent); padding: 15px; border-radius: 12px;
+            display: flex; flex-direction: column; gap: 10px; display: none;
+        }
+        #admin-panel.active { display: flex; }
+        .edit-switch { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #fff;}
+        .save-btn {
+            background: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px;
+            cursor: pointer; font-family: inherit; font-weight: bold; font-size: 0.9rem; transition: 0.2s;
+        }
+        .save-btn:hover { background: #059669; }
         
-        .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 1.2rem;
-            z-index: 100;
-            transition: opacity 0.5s;
+        .dev-badge {
+            position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5);
+            padding: 5px 15px; border-radius: 20px; border: 1px dashed #cbd5e1; cursor: pointer; color: #cbd5e1;
+            z-index: 49;
         }
+
+        /* Modal / Popup */
+        #info-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: 0.3s; z-index: 100;
+        }
+        #info-modal.show { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: #0f172a; width: 550px; max-width: 90%; border-radius: 20px;
+            border: 1px solid var(--border); padding: 30px; transform: translateY(20px); transition: 0.4s;
+        }
+        #info-modal.show .modal-content { transform: translateY(0); }
+        .close-btn {
+            position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; color: white;
+            width: 30px; height: 30px; border-radius: 50%; cursor: pointer; transition: 0.2s;
+        }
+        .close-btn:hover { background: #ef4444; }
+        .modal-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .th-title { font-size: 1.6rem; font-weight: 600; color: #fff; margin-bottom: 5px; }
+        .en-title { font-size: 1rem; color: var(--accent); font-weight: 400; text-transform: uppercase;}
+        .modal-body { font-size: 1rem; line-height: 1.6; color: #cbd5e1; }
+
+        #loading {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(4, 9, 20, 0.8); backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; transition: 0.4s; pointer-events: none; opacity: 0;
+        }
+        #loading.show { opacity: 1; pointer-events: auto; }
+        .spinner { width: 45px; height: 45px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;}
     </style>
-    <!-- Include GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
-    <!-- Import map for Three.js -->
     <script type="importmap">
         {
             "imports": {
@@ -224,548 +175,351 @@
     </script>
 </head>
 <body>
-    <div class="loading" id="loading">Initializing Neural Simulation...</div>
-    <div id="canvas-container"></div>
-    
-    <div id="interneuron-label">⚡ Bypassing the brain for faster reaction</div>
 
-    <div class="ui-container">
-        <div></div> <!-- Spacer for right alignment -->
-        <div class="side-panel">
-            <div class="header">
-                <h1>Human Reflex Arc</h1>
-                <p>Interactive 3D simulation of an involuntary neural pathway response.</p>
-            </div>
+    <div class="bg-animation"></div>
 
-            <div class="steps-container">
-                <div class="step-card" id="step-1">
-                    <h3><span class="indicator" style="background: var(--glow-pain)"></span> 1. Receptor</h3>
-                    <p>Skin receptors detect harmful stimulus (thorn) and generate pain signal.</p>
-                </div>
-                <div class="step-card" id="step-2">
-                    <h3><span class="indicator" style="background: var(--glow-sensory)"></span> 2. Sensory Neuron</h3>
-                    <p>Electrical impulse travels along the afferent nerve to the spinal cord.</p>
-                </div>
-                <div class="step-card" id="step-3">
-                    <h3><span class="indicator" style="background: var(--glow-inter)"></span> 3. Interneuron</h3>
-                    <p>Signal transfers within gray matter, bridging sensory and motor neurons.</p>
-                </div>
-                <div class="step-card" id="step-4">
-                    <h3><span class="indicator" style="background: var(--glow-motor)"></span> 4. Motor Neuron</h3>
-                    <p>Action potential travels via efferent nerve to the local muscle.</p>
-                </div>
-                <div class="step-card" id="step-5">
-                    <h3><span class="indicator" style="background: #fff"></span> 5. Effector</h3>
-                    <p>Bicep muscle contracts, physically withdrawing the hand from danger.</p>
-                </div>
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">🧬 BioExplore 3D</div>
+            <div class="sub-logo">ระบบวิเคราะห์จุดกายวิภาคเสมือนจริง</div>
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" placeholder="ค้นหา... (เช่น เซลล์, สมอง)">
             </div>
+        </div>
+        <div id="model-list"></div>
+    </div>
 
-            <div class="controls">
-                <button class="primary-btn" id="trigger-btn">Prick Finger</button>
+    <div id="main-view">
+        <div id="loading"><div class="spinner"></div><div id="loading-text" style="color: #94a3b8;">กำลังประกอบโมเดล 3D...</div></div>
+        
+        <div id="model-overlay">
+            <h2 id="ov-title">Select a Model</h2>
+            <p style="font-size: 0.85rem; color: #cbd5e1;">(คลิกที่วงกลมตัวเลขบน 3D เพื่ออ่านข้อมูล)</p>
+        </div>
+
+        <button class="dev-badge" onclick="document.getElementById('admin-panel').classList.toggle('active')">🔧 Admin</button>
+        <div id="admin-panel">
+            <label class="edit-switch">
+                <input type="checkbox" id="edit-mode-toggle"> <span>เปิดใช้งานโหมดลากย้าย (Edit Mode)</span>
+            </label>
+            <button class="save-btn" onclick="saveToFirebase()">☁️ Save to Firebase DB</button>
+            <p style="font-size: 0.75rem; color: #94a3b8; max-width: 200px;">ลากจุดบนโมเดล แล้วกดปุ่มนี้เพื่ออัพเดตพิกัดชุดใหม่ขึ้นฐานข้อมูล Firebase ทันที</p>
+        </div>
+        
+        <div id="three-canvas"></div>
+    </div>
+
+    <div id="info-modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">✕</button>
+            <div class="modal-header">
+                <div class="th-title" id="m-th-title">--</div>
+                <div class="en-title" id="m-en-title">--</div>
             </div>
+            <div class="modal-body" id="m-desc">--</div>
         </div>
     </div>
 
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        
+        // --- FIREBASE SDK INTEGRATION (VERCEL READY) ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-        // --- GSAP Setup ---
-        gsap.registerPlugin(MotionPathPlugin);
+        // VERCEL / FIREBASE CONFIG [ให้เอา Config จากเว็บ Firebase ของคุณมาใส่ตรงนี้ตอนที่จะขึ้น Vercel]
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // ลบ Comment บรรทัดล่างออกเพื่อเปิดใช้งาน Firebase จริง
+        // const app = initializeApp(firebaseConfig);
+        // const firestoreDB = getFirestore(app);
 
-        // --- Application State ---
-        let isAnimating = false;
+        // --- DATABASE LOCAL (โหลดแสดงผลเริ่มต้น) ---
+        const db = [
+            { 
+                id: 'neuron', 
+                name: 'เซลล์ประสาท',
+                thName: 'เซลล์ประสาทระบบสั่งการ',
+                enName: 'Motor Neuron Anatomy',
+                file: 'neuron.glb', 
+                desc: 'คลิกวงกลมตัวเลขบน 3D เพื่อสแกนชิ้นส่วนแต่ละบริเวณ', 
+                icon: '⚡',
+                hotspots: [
+                    { num: 1, pos: [-0.60, 0.60, 0.1],  name: 'Dendrites',        th: 'เดนไดรต์', desc: '<b>เดนไดรต์ (Dendrites)</b><br>ระยางค์ที่แตกแขนงคล้ายรากไม้แผ่ออกไปรอบๆ ส่วนนี้ทำหน้าที่<b>รับกระแสประสาท</b>เข้าสู่ตัวเซลล์บอดี้' },
+                    { num: 2, pos: [-0.40, 0.05, 0.4],  name: 'Nucleus',          th: 'นิวเคลียส', desc: '<b>นิวเคลียส (Nucleus)</b><br>แกนกลางของเซลล์ประสาทที่เก็บสารพันธุกรรม ทำหน้าที่ควบคุมการทำงานและการเจริญเติบโตของเซลล์' },
+                    { num: 3, pos: [-0.35, -0.15, 0.2], name: 'Cell body (Soma)',th: 'เซลล์บอดี้', desc: '<b>เซลล์บอดี้ (Soma)</b><br>ส่วนหลักของเซลล์ที่มีไซโตพลาซึมและออร์แกเนลล์อื่นๆ ที่ช่วยรักษาสภาพและผลิตโปรตีนเพื่อควบคุมเซลล์ประสาท' },
+                    { num: 4, pos: [-0.20, -0.30, 0.1], name: 'Axon',             th: 'แอกซอน', desc: '<b>แอกซอน (Axon)</b><br>เส้นใยประสาทยาวเดี่ยวที่ทอดตัวออกจากเซลล์บอดี้ เพื่อ<b>ส่งกระแสสัญญาณประสาท</b>ออกไปยังเซลล์อื่นๆ' },
+                    { num: 5, pos: [-0.05, -0.50, 0.2], name: 'Myelin Sheath',    th: 'เยื่อไมอีลิน', desc: '<b>เยื่อไมอีลิน (Myelin Sheath)</b><br>ปลอกไขมันทรงกระบอกที่พันรอบแอกซอน เป็นตัวฉนวนชั้นดี ช่วยให้กระแสประสาทเดินทางได้ไวและเสถียรขึ้น' },
+                    { num: 6, pos: [0.15, -0.65, 0.2],  name: 'Schwann Cell',     th: 'เซลล์ชวานน์', desc: '<b>เซลล์ชวานน์ (Schwann Cell)</b><br>เซลล์ประกอบที่ห่อหุ้มอยู่กับเยื่อไมอีลิน ทำหน้าที่ผลิตสร้างและซ่อมแซมเยื่อไมอีลินในระบบประสาทรอบนอก' },
+                    { num: 7, pos: [0.35, -0.75, 0.1],  name: 'Node of Ranvier',  th: 'โหนดออฟแรนเวียร์', desc: '<b>โหนดออฟแรนเวียร์ (Node of Ranvier)</b><br>คือรอยคอดหรือ "ช่องว่าง" ระหว่างปลอกไมอีลิน เป็นจุดที่กระแสไฟฟ้ากระโดดข้ามเพื่อเพิ่มความเร็วในการส่งสัญญาณได้อย่างทวีคูณ' },
+                    { num: 8, pos: [0.80, -0.35, 0.2],  name: 'Axon terminals',   th: 'ปลายแอกซอน', desc: '<b>ปลายแอกซอน (Axon Terminals)</b><br>ส่วนปลายสุดของหางยาวที่แตกแขนงคล้ายปลาหมึก ทำหน้าที่หลั่งสารสื่อประสาท (Neurotransmitter) ข้ามไซแนปส์เพื่อสั่งการเซลล์ประสาทตัวถัดไป' }
+                ]
+            }
+        ];
 
-        // --- Core Three.js Setup ---
-        const container = document.getElementById('canvas-container');
+        let currentModel = null;
+        let activeSceneMesh = null;
+        let htmlLabels = []; 
+        let baseSizeGlobal = new THREE.Vector3(1,1,1);
+
+        const container = document.getElementById('three-canvas');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x030816, 0.015);
-
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 5, 28);
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(0, 0, 15);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         container.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.target.set(3, 0, 0);
+        controls.minDistance = 2; controls.maxDistance = 30;
 
-        // --- Lighting (Medical/Cinematic) ---
-        const ambientLight = new THREE.AmbientLight(0x0f172a, 1.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
         scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-        dirLight.position.set(5, 10, 7);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        dirLight.position.set(5, 5, 5);
         scene.add(dirLight);
 
-        const backLight = new THREE.DirectionalLight(0x3b82f6, 3);
-        backLight.position.set(-10, -5, -10);
-        scene.add(backLight);
+        // ระบบจับพิกัดสำหรับ Edit Mode
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
 
-        const medLight = new THREE.SpotLight(0xa5f3fc, 5);
-        medLight.position.set(-8, 8, 5);
-        medLight.angle = Math.PI / 6;
-        medLight.penumbra = 0.5;
-        scene.add(medLight);
+        function createHotspots(modelData, baseSize) {
+            htmlLabels.forEach(lbl => lbl.element.remove());
+            htmlLabels = [];
 
-        // --- Materials ---
-        const skinMat = new THREE.MeshStandardMaterial({
-            color: 0xe6b999,
-            roughness: 0.4,
-            metalness: 0.1,
-            side: THREE.DoubleSide
-        });
+            if(!modelData.hotspots) return;
 
-        const muscleMat = new THREE.MeshStandardMaterial({
-            color: 0x882222,
-            roughness: 0.7,
-            metalness: 0.0,
-            emissive: 0x330000
-        });
+            modelData.hotspots.forEach(hs => {
+                const el = document.createElement('div');
+                el.className = 'hs-badge';
+                el.innerText = hs.num;
+                
+                // คลิกเปิด Modal
+                el.onclick = (e) => {
+                    const isEditMode = document.getElementById('edit-mode-toggle').checked;
+                    if (isEditMode) return; // กั้นไม่ให้เปิด Modal ตอนที่กำลังจัดการพิกัด
+                    document.getElementById('m-th-title').innerText = hs.th;
+                    document.getElementById('m-en-title').innerText = hs.name;
+                    document.getElementById('m-desc').innerHTML = hs.desc;
+                    document.getElementById('info-modal').classList.add('show');
+                };
 
-        const spineOuterMat = new THREE.MeshStandardMaterial({
-            color: 0xf8fafc,
-            roughness: 0.8,
-            metalness: 0.1,
-            transparent: true,
-            opacity: 0.8
-        });
+                document.getElementById('main-view').appendChild(el);
 
-        const spineInnerMat = new THREE.MeshStandardMaterial({
-            color: 0x94a3b8,
-            roughness: 0.9,
-            metalness: 0.0
-        });
-        
-        const nerveSensoryMat = new THREE.MeshStandardMaterial({
-            color: 0xfbbf24,
-            roughness: 0.3,
-            metalness: 0.2,
-            emissive: 0x452000,
-            transparent: true,
-            opacity: 0.6
-        });
+                const anchor = new THREE.Object3D();
+                anchor.position.set(
+                    (hs.pos[0] * baseSize.x) / 2,
+                    (hs.pos[1] * baseSize.y) / 2,
+                    (hs.pos[2] * baseSize.z) / 2
+                );
+                activeSceneMesh.add(anchor);
 
-        const nerveMotorMat = new THREE.MeshStandardMaterial({
-            color: 0x60a5fa,
-            roughness: 0.3,
-            metalness: 0.2,
-            emissive: 0x002045,
-            transparent: true,
-            opacity: 0.6
-        });
+                const labelObj = { element: el, anchor: anchor, hsData: hs, isDragging: false };
+                htmlLabels.push(labelObj);
 
-        const thornMat = new THREE.MeshStandardMaterial({
-            color: 0x223311,
-            roughness: 0.9,
-            metalness: 0.1
-        });
+                // --- EDIT MODE: Drag and Drop Logic ---
+                el.onpointerdown = (e) => {
+                    const isEditMode = document.getElementById('edit-mode-toggle').checked;
+                    if (!isEditMode) return;
 
-        // --- 3D Objects Construction ---
-        
-        // 1. Procedural Arm
-        const armGroup = new THREE.Group();
-        armGroup.position.set(2, 0, 0);
-        scene.add(armGroup);
+                    e.preventDefault();
+                    labelObj.isDragging = true;
+                    el.classList.add('dragging');
+                    el.style.cursor = 'grabbing';
+                    controls.enabled = false;
+                    
+                    el.setPointerCapture(e.pointerId);
 
-        // Shoulder joint
-        const shoulder = new THREE.Group();
-        shoulder.position.set(0, 4, 0);
-        armGroup.add(shoulder);
+                    let tempX = 0, tempY = 0;
 
-        // Upper Arm
-        const upperArmGeom = new THREE.CylinderGeometry(0.8, 0.6, 5, 32);
-        upperArmGeom.translate(0, -2.5, 0); // Pivot at top
-        const upperArm = new THREE.Mesh(upperArmGeom, skinMat);
-        upperArm.castShadow = true;
-        shoulder.add(upperArm);
+                    const onPointerMove = (ev) => {
+                        const rect = container.getBoundingClientRect();
+                        tempX = ev.clientX - rect.left;
+                        tempY = ev.clientY - rect.top;
+                        el.style.transform = `translate(-50%, -50%) translate(${tempX}px, ${tempY}px)`;
+                    };
 
-        // Bicep (Muscle inside/showing)
-        const bicepGeom = new THREE.CapsuleGeometry(0.7, 2, 16, 16);
-        const bicep = new THREE.Mesh(bicepGeom, muscleMat);
-        bicep.position.set(0.2, -2.5, 0.4);
-        bicep.rotation.x = 0.2;
-        upperArm.add(bicep);
+                    const onPointerUp = (ev) => {
+                        labelObj.isDragging = false;
+                        el.classList.remove('dragging');
+                        el.style.cursor = 'pointer';
+                        controls.enabled = true;
+                        
+                        el.releasePointerCapture(ev.pointerId);
+                        el.removeEventListener('pointermove', onPointerMove);
+                        el.removeEventListener('pointerup', onPointerUp);
 
-        // Elbow joint
-        const elbow = new THREE.Group();
-        elbow.position.set(0, -5, 0);
-        upperArm.add(elbow);
+                        // ใช้ Raycaster หดทะลุลงไปหาพิกัดโลกสมมติ
+                        const rect = container.getBoundingClientRect();
+                        mouse.x = (tempX / container.clientWidth) * 2 - 1;
+                        mouse.y = -(tempY / container.clientHeight) * 2 + 1;
+                        raycaster.setFromCamera(mouse, camera);
 
-        // Forearm
-        const forearmGeom = new THREE.CylinderGeometry(0.6, 0.4, 6, 32);
-        forearmGeom.translate(0, -3, 0);
-        const forearm = new THREE.Mesh(forearmGeom, skinMat);
-        forearm.castShadow = true;
-        
-        // Default pose: relaxed slightly forward
-        elbow.rotation.z = -0.5;
-        elbow.add(forearm);
+                        const intersects = raycaster.intersectObject(activeSceneMesh, true);
+                        if (intersects.length > 0) {
+                            const hitWorld = intersects[0].point;
+                            // อัปเดตสมอ 3 มิติ
+                            anchor.position.copy(activeSceneMesh.worldToLocal(hitWorld.clone()));
+                            
+                            // อัปเดตพิกัด [X, Y, Z] ลงในข้อมูล Local ทันที
+                            hs.pos[0] = (anchor.position.x * 2) / baseSize.x;
+                            hs.pos[1] = (anchor.position.y * 2) / baseSize.y;
+                            hs.pos[2] = (anchor.position.z * 2) / baseSize.z;
+                            console.log(`Updated Hotspot #${hs.num} to:`, hs.pos);
+                            
+                            // Visual cue of success
+                            el.style.boxShadow = "0 0 20px #10b981";
+                            setTimeout(() => { el.style.boxShadow = ""; }, 500);
 
-        // Hand & Finger
-        const handGroup = new THREE.Group();
-        handGroup.position.set(0, -6, 0);
-        forearm.add(handGroup);
+                        } else {
+                            // แจ้งเตือนเมื่อลากไปวางในอากาศ (ไม่โดนเนื้อโมเดล 3D)
+                            alert(`วางตำแหน่งไม่สำเร็จ! ❌\nจุดหมายเลข ${hs.num} ต้องวางอยู่บน "เนื้อโมเดล 3D" เท่านั้น (ถ้าวางบนอากาศหรือทะลุออกไป กรุณาลากวางใหม่ครับ)`);
+                        }
+                    };
 
-        const handGeom = new THREE.BoxGeometry(1, 1.5, 0.5);
-        const hand = new THREE.Mesh(handGeom, skinMat);
-        hand.position.set(0, -0.75, 0);
-        hand.castShadow = true;
-        handGroup.add(hand);
-
-        const fingerGeom = new THREE.CapsuleGeometry(0.15, 1.5, 16, 16);
-        const finger = new THREE.Mesh(fingerGeom, skinMat);
-        finger.position.set(0, -2, 0);
-        finger.castShadow = true;
-        handGroup.add(finger);
-        
-        // Finger tip for pain glow
-        const fingerTipPos = new THREE.Vector3(0, -2.8, 0); // Relative to handGroup
-
-        const painGlow = new THREE.PointLight(0xff0000, 0, 5);
-        painGlow.position.copy(fingerTipPos);
-        handGroup.add(painGlow);
-
-        // 2. Spinal Cord Cross Section
-        const spineGroup = new THREE.Group();
-        spineGroup.position.set(-8, 3, -2);
-        spineGroup.rotation.x = Math.PI / 8;
-        spineGroup.rotation.y = Math.PI / 6;
-        scene.add(spineGroup);
-
-        // White matter (Outer oval)
-        const outerSpineShape = new THREE.Shape();
-        outerSpineShape.ellipse(0, 0, 3, 2.2, 0, Math.PI * 2, false, 0);
-        const extrudeSettings = { depth: 1, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.1, bevelSegments: 3 };
-        const outerSpineGeom = new THREE.ExtrudeGeometry(outerSpineShape, extrudeSettings);
-        const outerSpine = new THREE.Mesh(outerSpineGeom, spineOuterMat);
-        outerSpine.position.z = -0.5;
-        outerSpine.castShadow = true;
-        outerSpine.receiveShadow = true;
-        spineGroup.add(outerSpine);
-
-        // Gray matter (Inner 'H' / Butterfly shape)
-        const innerSpineShape = new THREE.Shape();
-        innerSpineShape.moveTo(-0.5, 1);
-        innerSpineShape.quadraticCurveTo(-1.5, 0.8, -1.8, 0.5); // Top left horn
-        innerSpineShape.quadraticCurveTo(-0.8, 0, -1.5, -0.8); // Bottom left horn
-        innerSpineShape.quadraticCurveTo(-0.5, -0.5, 0, -0.2); // Center bottom
-        innerSpineShape.quadraticCurveTo(0.5, -0.5, 1.5, -0.8); // Bottom right
-        innerSpineShape.quadraticCurveTo(0.8, 0, 1.8, 0.5); // Top right horn
-        innerSpineShape.quadraticCurveTo(1.5, 0.8, 0.5, 1); // Center top
-        innerSpineShape.lineTo(-0.5, 1);
-
-        const innerExtrude = { depth: 1.1, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05 };
-        const innerSpineGeom = new THREE.ExtrudeGeometry(innerSpineShape, innerExtrude);
-        const innerSpine = new THREE.Mesh(innerSpineGeom, spineInnerMat);
-        innerSpine.position.z = -0.55;
-        spineGroup.add(innerSpine);
-
-        // Ventral (motor) and Dorsal (sensory) roots stubs
-        const rootGeom = new THREE.CylinderGeometry(0.15, 0.15, 1.5);
-        const dorsalRoot = new THREE.Mesh(rootGeom, nerveSensoryMat);
-        dorsalRoot.rotation.z = Math.PI / 2;
-        dorsalRoot.position.set(2.5, 0.6, 0);
-        spineGroup.add(dorsalRoot);
-
-        const dorsalGanglion = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), nerveSensoryMat);
-        dorsalGanglion.position.set(3.2, 0.6, 0);
-        spineGroup.add(dorsalGanglion);
-
-        const ventralRoot = new THREE.Mesh(rootGeom, nerveMotorMat);
-        ventralRoot.rotation.z = Math.PI / 2;
-        ventralRoot.position.set(2.5, -0.6, 0);
-        spineGroup.add(ventralRoot);
-
-        // 3. Thorn
-        const thornRoot = new THREE.Group();
-        scene.add(thornRoot);
-        
-        const thornGeom = new THREE.ConeGeometry(0.1, 0.6, 16);
-        const thorn = new THREE.Mesh(thornGeom, thornMat);
-        thorn.rotation.z = Math.PI / 2;
-        thorn.position.set(0, 0, 0);
-        thornRoot.add(thorn);
-
-        // 4. Nerve Pathways (Curves)
-        // We need robust world positions for curves. So we'll calculate them post-matrix update.
-        scene.updateMatrixWorld(true);
-
-        function getCurvePoints() {
-            const fTip = new THREE.Vector3();
-            finger.getWorldPosition(fTip);
-            fTip.y -= 0.7; // tip of finger
-
-            const elbowPos = new THREE.Vector3();
-            elbow.getWorldPosition(elbowPos);
-
-            const shoulderPos = new THREE.Vector3();
-            shoulder.getWorldPosition(shoulderPos);
-            
-            const bicepCenter = new THREE.Vector3();
-            bicep.getWorldPosition(bicepCenter);
-
-            const sCordPos = new THREE.Vector3();
-            spineGroup.getWorldPosition(sCordPos);
-
-            const dorsalPos = new THREE.Vector3();
-            dorsalGanglion.getWorldPosition(dorsalPos);
-            
-            const ventralPos = new THREE.Vector3();
-            ventralRoot.getWorldPosition(ventralPos);
-            ventralPos.x += 0.8;
-
-            // Sensory Nerve (Finger -> Forearm -> Shoulder -> Dorsal Root)
-            const sensoryPoints = [
-                fTip,
-                elbowPos.clone().add(new THREE.Vector3(0.3, -2, -0.2)),
-                elbowPos.clone().add(new THREE.Vector3(0.5, 0, -0.2)),
-                shoulderPos.clone().add(new THREE.Vector3(0.5, -2, -0.2)),
-                new THREE.Vector3(sCordPos.x + 5, sCordPos.y, sCordPos.z - 1),
-                dorsalPos
-            ];
-
-            // Motor Nerve (Ventral Root -> Shoulder -> Bicep)
-            const motorPoints = [
-                ventralPos,
-                new THREE.Vector3(sCordPos.x + 4, sCordPos.y - 1, sCordPos.z + 1),
-                shoulderPos.clone().add(new THREE.Vector3(-0.2, -1, 0.3)),
-                bicepCenter
-            ];
-
-            // Position thorn right under finger tip
-            thornRoot.position.copy(fTip);
-            thornRoot.position.x -= 0.1;
-            thornRoot.position.y -= 0.6; // Below finger
-
-            return { sensoryPoints, motorPoints, fTip, dorsalPos, ventralPos };
+                    el.addEventListener('pointermove', onPointerMove);
+                    el.addEventListener('pointerup', onPointerUp);
+                };
+            });
         }
 
-        const curveData = getCurvePoints();
-        const sensoryCurve = new THREE.CatmullRomCurve3(curveData.sensoryPoints);
-        const motorCurve = new THREE.CatmullRomCurve3(curveData.motorPoints);
-
-        const tubeSegments = 64;
-        const tubeRadius = 0.05;
-
-        const sensoryTubeGeom = new THREE.TubeGeometry(sensoryCurve, tubeSegments, tubeRadius, 8, false);
-        const sensoryTube = new THREE.Mesh(sensoryTubeGeom, nerveSensoryMat);
-        scene.add(sensoryTube);
-
-        const motorTubeGeom = new THREE.TubeGeometry(motorCurve, tubeSegments, tubeRadius, 8, false);
-        const motorTube = new THREE.Mesh(motorTubeGeom, nerveMotorMat);
-        scene.add(motorTube);
-        
-        const updateCurves = () => {
-            const cData = getCurvePoints();
-            sensoryCurve.points = cData.sensoryPoints;
-            motorCurve.points = cData.motorPoints;
-            sensoryTube.geometry.dispose();
-            motorTube.geometry.dispose();
-            sensoryTube.geometry = new THREE.TubeGeometry(sensoryCurve, tubeSegments, tubeRadius, 8, false);
-            motorTube.geometry = new THREE.TubeGeometry(motorCurve, tubeSegments, tubeRadius, 8, false);
+        window.saveToFirebase = async function() {
+            if(!currentModel) return;
+            const updatedHotspots = htmlLabels.map(l => l.hsData);
+            
+            try {
+                // หากปลดล็อค Firebase Config แล้ว จะรันบรรทัดนี้ได้เลย!
+                // await setDoc(doc(firestoreDB, "models", currentModel.id), { hotspots: updatedHotspots }, { merge: true });
+                
+                alert(`🔥 [FIREBASE MOCK] บันทึกพิกัดทั้งหมดของโมเดล [${currentModel.id}] ขึ้นฐานข้อมูลสำเร็จแล้ว!\n(ระบบจะจำค่าพิกัดที่คุณลากไว้จนกว่าจะรีเฟรช หากต้องการใช้งานจริง ให้นำ Auth Keys ใส่ในไฟล​์ HTML ครับ)`);
+                console.log("JSON ที่จะส่งเข้า Firebase Cloud:", JSON.stringify(updatedHotspots));
+            } catch (err) {
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อ Firebase: " + err);
+            }
         }
 
-        // 5. Signal Pulse (Glowing sphere + Light)
-        const pulseGroup = new THREE.Group();
-        const pulseGeom = new THREE.SphereGeometry(0.15, 16, 16);
-        const pulseMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const pulseMesh = new THREE.Mesh(pulseGeom, pulseMat);
-        
-        const pulseLight = new THREE.PointLight(0xffffff, 0, 3);
-        pulseGroup.add(pulseMesh);
-        pulseGroup.add(pulseLight);
-        pulseGroup.visible = false;
-        scene.add(pulseGroup);
-
-        // Wait to remove loader
-        document.getElementById('loading').style.opacity = '0';
-        setTimeout(() => document.getElementById('loading').remove(), 500);
-
-        // --- Window Resize ---
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // --- 3D to 2D Label Tracker ---
-        const labelEl = document.getElementById('interneuron-label');
-        function updateLabelPosition() {
-            const vector = new THREE.Vector3();
-            spineGroup.getWorldPosition(vector);
-            vector.project(camera);
+        function loadModelIntoScene(modelData) {
+            if(currentModel && currentModel.id === modelData.id) return; 
+            currentModel = modelData;
             
-            const x = (vector.x * .5 + .5) * window.innerWidth;
-            const y = (vector.y * -.5 + .5) * window.innerHeight;
+            renderList(document.getElementById('search-input').value);
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('model-overlay').style.opacity = 0;
             
-            labelEl.style.left = `${x}px`;
-            labelEl.style.top = `${y - 80}px`; // offset above spine
+            htmlLabels.forEach(lbl => lbl.element.remove());
+            htmlLabels = [];
+
+            if(activeSceneMesh) {
+                scene.remove(activeSceneMesh);
+                activeSceneMesh = null;
+            }
+
+            const loader = new GLTFLoader();
+            loader.load(`./${modelData.file}`, (gltf) => {
+                activeSceneMesh = gltf.scene;
+
+                const box = new THREE.Box3().setFromObject(activeSceneMesh);
+                const center = box.getCenter(new THREE.Vector3());
+                baseSizeGlobal = box.getSize(new THREE.Vector3());
+                
+                activeSceneMesh.children.forEach(child => {
+                    child.position.sub(center);
+                });
+                
+                const maxDim = Math.max(baseSizeGlobal.x, baseSizeGlobal.y, baseSizeGlobal.z);
+                activeSceneMesh.scale.setScalar(8 / maxDim);
+                scene.add(activeSceneMesh);
+                
+                createHotspots(currentModel, baseSizeGlobal);
+
+                document.getElementById('ov-title').innerText = modelData.name;
+                document.getElementById('model-overlay').style.opacity = 1;
+                document.getElementById('loading').classList.remove('show');
+                
+            }, undefined, (err) => {
+                document.getElementById('loading-text').innerText = "❌ หาไฟล์ไม่พบ: " + modelData.file;
+                setTimeout(() => document.getElementById('loading').classList.remove('show'), 2000);
+            });
         }
 
-        // --- Animation Loop ---
+        function updateHotspotPositions() {
+            if(!activeSceneMesh) return;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+
+            htmlLabels.forEach(lbl => {
+                if(lbl.isDragging) return;
+
+                const point = new THREE.Vector3();
+                lbl.anchor.getWorldPosition(point);
+                point.project(camera);
+
+                if (point.z > 1) {
+                    lbl.element.style.opacity = 0;
+                } else {
+                    lbl.element.style.opacity = 1;
+                    const x = (point.x * 0.5 + 0.5) * w;
+                    const y = (point.y * -0.5 + 0.5) * h;
+                    lbl.element.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+                }
+            });
+        }
+
         function animate() {
             requestAnimationFrame(animate);
-            controls.update();
-            updateLabelPosition();
-            if(!isAnimating){
-                // Gentle idle breathing animation
-                const time = Date.now() * 0.001;
-                armGroup.position.y = Math.sin(time * 0.5) * 0.1;
-                spineGroup.rotation.z = Math.sin(time * 0.3) * 0.02;
-                updateCurves(); // Update nerve tubes to stay attached to moving arm
-            }
+            controls.update(); 
             renderer.render(scene, camera);
+            updateHotspotPositions(); 
         }
         animate();
 
-        // --- Interaction & Timeline ---
-        const btn = document.getElementById('trigger-btn');
-        const proxyObj = { 
-            sensoryProgress: 0, 
-            motorProgress: 0,
-            spineFlash: 0,
-            bicepScale: 1
-        };
-
-        function setStep(stepNum) {
-            document.querySelectorAll('.step-card').forEach(el => {
-                el.className = 'step-card'; // reset
-            });
-            if(stepNum > 0) {
-                document.getElementById(`step-${stepNum}`).classList.add(`active-${stepNum}`);
-            }
-        }
-
-        btn.addEventListener('click', () => {
-            if (isAnimating) return;
-            isAnimating = true;
-            btn.disabled = true;
-            
-            // Reset state
-            setStep(0);
-            proxyObj.sensoryProgress = 0;
-            proxyObj.motorProgress = 0;
-            proxyObj.spineFlash = 0;
-            proxyObj.bicepScale = 1;
-            pulseGroup.visible = true;
-            painGlow.intensity = 0;
-            labelEl.style.opacity = '0';
-            bicep.scale.set(1, 1, 1);
-            elbow.rotation.z = -0.5; // Default elbow rot
-            spineInnerMat.emissive.setHex(0x000000);
-            
-            // Make sure curves are updated to initial world state before running
-            updateCurves();
-
-            const tl = gsap.timeline({
-                onComplete: () => {
-                    setTimeout(() => {
-                        // Reset everything after sequence finishes
-                        gsap.to(painGlow, { intensity: 0, duration: 1 });
-                        gsap.to(elbow.rotation, { z: -0.5, duration: 1 });
-                        gsap.to(bicep.scale, { x: 1, y: 1, z: 1, duration: 1, onUpdate: updateCurves });
-                        labelEl.style.opacity = '0';
-                        setStep(0);
-                        pulseGroup.visible = false;
-                        isAnimating = false;
-                        btn.disabled = false;
-                    }, 3000); // Hold final pose for 3s
-                }
-            });
-
-            // 1. Receptor (Finger hits thorn)
-            tl.call(() => setStep(1));
-            // Move arm slightly down to touch thorn
-            tl.to(shoulder.rotation, { z: 0.05, duration: 0.3, onUpdate: updateCurves }, "hit");
-            tl.to(painGlow, { intensity: 10, duration: 0.2, ease: "rough" }, "hit+=0.1");
-            tl.to(fingerTipPos, { y: fingerTipPos.y + 0.1, duration: 0.1, yoyo: true, repeat: 1}, "hit+=0.1");
-
-            // 2. Sensory Neuron
-            tl.call(() => {
-                setStep(2);
-                pulseMat.color.setHex(0xfbbf24);
-                pulseLight.color.setHex(0xfbbf24);
-            }, [], "+=0.2");
-            
-            tl.to(proxyObj, {
-                sensoryProgress: 1,
-                duration: 1.5,
-                ease: "power2.inOut",
-                onUpdate: () => {
-                    const point = sensoryCurve.getPointAt(proxyObj.sensoryProgress);
-                    pulseGroup.position.copy(point);
-                }
-            });
-
-            // 3. Interneuron (Spinal Cord Flash)
-            tl.call(() => {
-                setStep(3);
-                pulseGroup.visible = false; // Hide pulse inside spine momentarily
-                labelEl.style.opacity = '1';
-            });
-            
-            tl.to(proxyObj, {
-                spineFlash: 1,
-                duration: 0.3,
-                yoyo: true,
-                repeat: 3,
-                ease: "none",
-                onUpdate: () => {
-                    const flashVal = Math.floor(proxyObj.spineFlash * 255);
-                    spineInnerMat.emissive.setRGB(flashVal/255 * 0.8, flashVal/255 * 0.2, flashVal/255);
-                }
-            });
-
-            // 4. Motor Neuron
-            tl.call(() => {
-                setStep(4);
-                labelEl.style.opacity = '0'; // Hide label
-                spineInnerMat.emissive.setHex(0x000000);
-                pulseGroup.visible = true;
-                pulseMat.color.setHex(0x60a5fa);
-                pulseLight.color.setHex(0x60a5fa);
-                // Reset shoulder
-                gsap.to(shoulder.rotation, { z: 0, duration: 0.5, onUpdate: updateCurves });
-            }, [], "+=0.1");
-
-            tl.to(proxyObj, {
-                motorProgress: 1,
-                duration: 1.2,
-                ease: "power2.inOut",
-                onUpdate: () => {
-                    const point = motorCurve.getPointAt(proxyObj.motorProgress);
-                    pulseGroup.position.copy(point);
-                }
-            });
-
-            // 5. Effector (Muscle Contract & Arm Flex)
-            tl.call(() => {
-                setStep(5);
-                pulseGroup.visible = false;
-                pulseMat.color.setHex(0xffffff); // Flash white at end
-                pulseLight.color.setHex(0xffffff);
-            });
-            
-            // Muscle bounds and arm pulls away
-            tl.to(bicep.scale, { x: 1.4, z: 1.4, y: 0.9, duration: 0.4, ease: "back.out(1.7)" }, "contract");
-            tl.to(bicep.material.emissive, { r: 0.5, g: 0.1, b: 0.1, duration: 0.2, yoyo: true, repeat: 1 }, "contract");
-            tl.to(elbow.rotation, { z: 1.2, duration: 0.4, ease: "power2.out", onUpdate: updateCurves }, "contract");
-            
-            // Dim pain as finger pulls away
-            tl.to(painGlow, { intensity: 2, duration: 0.5 }, "contract");
+        window.addEventListener('resize', () => {
+             camera.aspect = container.clientWidth / container.clientHeight;
+             camera.updateProjectionMatrix();
+             renderer.setSize(container.clientWidth, container.clientHeight);
         });
+
+        const listEl = document.getElementById('model-list');
+        window.handleCardClick = function(id) { const m = db.find(x=>x.id===id); if(m) loadModelIntoScene(m); }
+        function renderList(query = '') {
+            listEl.innerHTML = '';
+            const filtered = db.filter(m => m.name.toLowerCase().includes(query.toLowerCase()) || m.desc.toLowerCase().includes(query.toLowerCase()));
+            filtered.forEach(m => {
+                const isActive = currentModel && currentModel.id === m.id;
+                listEl.innerHTML += `
+                    <div class="model-card ${isActive ? 'active' : ''}" onclick="handleCardClick('${m.id}')">
+                        <div class="model-icon">${m.icon}</div>
+                        <div class="model-info"><h3>${m.name}</h3><p>${m.desc}</p></div>
+                    </div>`;
+            });
+        }
+        document.getElementById('search-input').addEventListener('input', (e) => renderList(e.target.value));
+
+        window.openModal = function() {
+            if(!currentModel) return;
+            document.getElementById('m-th-title').innerText = currentModel.thName;
+            document.getElementById('m-en-title').innerText = currentModel.enName;
+            document.getElementById('m-desc').innerHTML = currentModel.fullDesc;
+            document.getElementById('info-modal').classList.add('show');
+        }
+        window.closeModal = function() { document.getElementById('info-modal').classList.remove('show'); }
+
+        // Start
+        renderList();
+        if(db.length > 0) loadModelIntoScene(db[0]);
+
     </script>
 </body>
 </html>
