@@ -203,8 +203,9 @@
             <label class="edit-switch">
                 <input type="checkbox" id="edit-mode-toggle"> <span>เปิดใช้งานโหมดลากย้าย (Edit Mode)</span>
             </label>
-            <button class="save-btn" onclick="saveToFirebase()">☁️ Save to Firebase DB</button>
-            <p style="font-size: 0.75rem; color: #94a3b8; max-width: 200px;">ลากจุดบนโมเดล แล้วกดปุ่มนี้เพื่ออัพเดตพิกัดชุดใหม่ขึ้นฐานข้อมูล Firebase ทันที</p>
+            <button class="save-btn" onclick="saveToFirebase()">☁️ Save Config / Export</button>
+            <textarea id="export-box" style="display:none; width:100%; height:80px; margin-top:5px; background: rgba(0,0,0,0.5); color:#a7f3d0; border:1px solid #10b981; border-radius:4px; padding:5px; font-size:10px; resize:none;" readonly></textarea>
+            <p style="font-size: 0.75rem; color: #94a3b8; max-width: 250px;">ลากจุดบนโมเดล แล้วกดปุ่มบน เพื่อเอาพิกัดล่าสุดไปใส่ในโค้ดอย่างถาวร</p>
         </div>
         
         <div id="three-canvas"></div>
@@ -228,20 +229,20 @@
         
         // --- FIREBASE SDK INTEGRATION (VERCEL READY) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-        // VERCEL / FIREBASE CONFIG [ให้เอา Config จากเว็บ Firebase ของคุณมาใส่ตรงนี้ตอนที่จะขึ้น Vercel]
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+          apiKey: "AIzaSyCNNzRiZWjbiyvCe5ixn7w-jVxppyk2V2I",
+          authDomain: "bio55-52faa.firebaseapp.com",
+          projectId: "bio55-52faa",
+          storageBucket: "bio55-52faa.firebasestorage.app",
+          messagingSenderId: "491773325338",
+          appId: "1:491773325338:web:12d68fe382d39d2aeb21a3",
+          measurementId: "G-4972KR2M5S"
         };
-        // ลบ Comment บรรทัดล่างออกเพื่อเปิดใช้งาน Firebase จริง
-        // const app = initializeApp(firebaseConfig);
-        // const firestoreDB = getFirestore(app);
+        
+        const app = initializeApp(firebaseConfig);
+        const firestoreDB = getFirestore(app);
 
         // --- DATABASE LOCAL (โหลดแสดงผลเริ่มต้น) ---
         const db = [
@@ -397,16 +398,34 @@
 
         window.saveToFirebase = async function() {
             if(!currentModel) return;
-            const updatedHotspots = htmlLabels.map(l => l.hsData);
+            
+            let outputCode = "";
+            const currentHotspots = htmlLabels.map(l => l.hsData);
+            
+            currentHotspots.forEach(hs => {
+                const x = hs.pos[0].toFixed(2);
+                const y = hs.pos[1].toFixed(2);
+                const z = hs.pos[2].toFixed(2);
+                outputCode += `{ num: ${hs.num}, pos: [${x}, ${y}, ${z}], name: '${hs.name}', th: '${hs.th}', desc: '${hs.desc}' },\n`;
+            });
+
+            const exportBox = document.getElementById('export-box');
+            exportBox.style.display = 'block';
+            exportBox.value = outputCode;
             
             try {
-                // หากปลดล็อค Firebase Config แล้ว จะรันบรรทัดนี้ได้เลย!
-                // await setDoc(doc(firestoreDB, "models", currentModel.id), { hotspots: updatedHotspots }, { merge: true });
-                
-                alert(`🔥 [FIREBASE MOCK] บันทึกพิกัดทั้งหมดของโมเดล [${currentModel.id}] ขึ้นฐานข้อมูลสำเร็จแล้ว!\n(ระบบจะจำค่าพิกัดที่คุณลากไว้จนกว่าจะรีเฟรช หากต้องการใช้งานจริง ให้นำ Auth Keys ใส่ในไฟล​์ HTML ครับ)`);
-                console.log("JSON ที่จะส่งเข้า Firebase Cloud:", JSON.stringify(updatedHotspots));
+                // อัปเกรด: บันทึกพาร์ทพิกัดขึ้น Firebase จริงๆ แล้ว!
+                await setDoc(doc(firestoreDB, "models", currentModel.id), { 
+                    hotspots: currentHotspots,
+                    lastUpdated: new THREE.Clock().getElapsedTime()
+                }, { merge: true });
+
+                await navigator.clipboard.writeText(outputCode);
+                alert(`🚀 บันทึกขึ้น Cloud และคัดลอกลง Clipboard สำเร็จ!\n\nข้อมูลพิกัดถูกส่งไปที่ Firebase (Project: bio55-52faa) เรียบร้อยแล้วครับ!`);
             } catch (err) {
-                alert("เกิดข้อผิดพลาดในการเชื่อมต่อ Firebase: " + err);
+                console.error("Firebase Error:", err);
+                alert(`🔥 จัดระเบียบพิกัดสำเร็จ (แต่เชื่อมต่อ Firebase พลาด)!\nก๊อปปี้โค้ดในช่องดำๆ ไปแปะทับในไฟล์ได้เลยครับ\nError: ${err.message}`);
+                exportBox.select();
             }
         }
 
