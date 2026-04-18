@@ -325,12 +325,26 @@
             loader.load(modelData.file, (gltf) => {
                 activeSceneMesh = gltf.scene;
                 
-                // Centering
+                // Centering & Auto-Scaling
                 const box = new THREE.Box3().setFromObject(activeSceneMesh);
+                const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
-                activeSceneMesh.position.sub(center);
+                
+                // ขยายให้ขนาดพอดีกับมาตราส่วนมาตรฐาน (ประมาณ 5-8 หน่วย)
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 8 / maxDim;
+                activeSceneMesh.scale.setScalar(scale);
+                
+                // ปรับให้กึ่งกลาง
+                activeSceneMesh.position.sub(center.multiplyScalar(scale));
                 
                 scene.add(activeSceneMesh);
+                
+                // ปรับมุมกล้องให้เห็นภาพรวมสวยๆ
+                camera.position.set(0, 0, 12);
+                controls.target.set(0, 0, 0);
+                controls.update();
+
                 createHotspots(modelData.hotspots);
                 document.getElementById('loading').classList.remove('show');
             });
