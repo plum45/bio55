@@ -127,6 +127,25 @@
         .panel-desc { line-height: 1.6; color: #cbd5e1; font-size: 0.95rem; }
 
         /* --- Admin UI --- */
+        /* --- Admin UI & Login --- */
+        #admin-auth-overlay {
+            position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9);
+            backdrop-filter: blur(20px); z-index: 3000;
+            display: none; align-items: center; justify-content: center;
+            transition: all 0.3s;
+        }
+        #admin-auth-overlay.visible { display: flex; }
+        .auth-card {
+            background: var(--glass); padding: 40px; border-radius: 30px;
+            border: 1px solid var(--glass-border); width: 320px; text-align: center;
+        }
+        .auth-card h3 { margin-bottom: 20px; font-weight: 800; color: #fff; }
+        .auth-card input {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+            padding: 15px; border-radius: 15px; color: white; text-align: center; font-size: 1.5rem;
+            letter-spacing: 5px; margin-bottom: 20px;
+        }
+
         .dev-badge { position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: #64748b; font-size: 0.8rem; cursor: pointer; z-index: 100; backdrop-filter: blur(10px); }
         #admin-panel {
             position: fixed; bottom: 80px; right: 20px; width: 280px;
@@ -177,7 +196,7 @@
             </div>
         </div>
 
-        <div class="dev-badge" onclick="document.getElementById('admin-panel').classList.toggle('active')">🔧 Admin Mode</div>
+        <div class="dev-badge" onclick="toggleAdminAuth()">🔧 Admin Mode</div>
         <div id="admin-panel">
             <div class="admin-title">บันทึกข้อมูลไปยัง CLOUD</div>
             <label class="edit-switch">
@@ -188,6 +207,16 @@
                 * ในโหมดแก้ไข Double Click บนโมเดลเพื่อสร้างจุดใหม่
             </div>
             <button class="save-btn" id="save-firebase-btn">SAVE TO FIREBASE</button>
+        </div>
+
+        <!-- Admin Login Overlay -->
+        <div id="admin-auth-overlay">
+            <div class="auth-card">
+                <h3>Admin Login</h3>
+                <input type="password" id="admin-pass" placeholder="••••">
+                <button class="save-btn" onclick="checkAdminAuth()">Login</button>
+                <button style="background:none; border:none; color:#64748b; margin-top:15px; cursor:pointer;" onclick="toggleAdminAuth()">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -358,50 +387,35 @@
                 div.setAttribute('data-num', h.num);
                 document.body.appendChild(div);
 
-                let isDragging = false;
+                // --- DRAG LOGIC ---
+                const labelObj = { element: div, pos: new THREE.Vector3(...h.pos), data: h };
+                
                 div.addEventListener('mousedown', (e) => {
                     if (!document.getElementById('edit-mode').checked) return;
-                    isDragging = true;
+                    activeDragLabel = { element: div, data: h, labelObj: labelObj };
+                    controls.enabled = false; 
                     e.stopPropagation();
                 });
 
                 div.onclick = (e) => {
-                    if (isDragging) return;
+                    if (activeDragLabel) return;
                     showInfo(h, div);
                 };
 
-                htmlLabels.push({ element: div, pos: new THREE.Vector3(...h.pos), data: h });
+                htmlLabels.push(labelObj);
             });
         }
 
-        function showInfo(h, el) {
-            htmlLabels.forEach(l => l.element.classList.remove('active'));
-            el.classList.add('active');
-            
-            document.getElementById('info-num').innerText = h.num;
-            document.getElementById('info-th').innerText = h.th;
-            document.getElementById('info-en').innerText = h.name;
-            document.getElementById('info-desc').innerHTML = h.desc || 'ไม่มีคำอธิบายในขณะนี้';
-            document.getElementById('info-panel').classList.add('visible');
-        }
+        let activeDragLabel = null;
 
-        window.closeInfoPanel = () => {
-            document.getElementById('info-panel').classList.remove('visible');
-            htmlLabels.forEach(l => l.element.classList.remove('active'));
-        };
-
-        // Handling Clicks on canvas to close or edit
-        container.addEventListener('click', () => {
-             if (window.innerWidth <= 1024) document.getElementById('sidebar').classList.remove('active');
-        });
-
-        // Edit Mode: Double click to create
+        // ดับเบิลคลิกเพื่อสร้างจุดใหม่
         container.addEventListener('dblclick', (e) => {
-            if (!document.getElementById('edit-mode').checked) return;
+            if (!document.getElementById('edit-mode').checked || !activeSceneMesh) return;
             
             const rect = container.getBoundingClientRect();
+            const offset = (window.innerWidth <= 1024) ? 0 : 320;
             const mouse = new THREE.Vector2(
-                ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                ((e.clientX - rect.left - offset) / rect.width) * 2 - 1,
                 -((e.clientY - rect.top) / rect.height) * 2 + 1
             );
 
@@ -411,6 +425,7 @@
 
             if (intersects.length > 0) {
                 const point = intersects[0].point;
+                // แปลงพิกัดโลกกลับเป็นพิกัด Local ของโมเดลเพื่อบันทึก
                 const localPoint = activeSceneMesh.worldToLocal(point.clone());
                 const nextNum = currentModel.hotspots.length > 0 ? Math.max(...currentModel.hotspots.map(h => h.num)) + 1 : 1;
                 
@@ -419,7 +434,7 @@
                     pos: [localPoint.x, localPoint.y, localPoint.z],
                     name: 'New Spot',
                     th: 'จุดใหม่',
-                    desc: 'คลิกเพื่อแก้ไขรายละเอียด'
+                    desc: 'คลิกโหมดแก้ไขเพื่อปรับปรุงเนื้อหา'
                 };
                 
                 currentModel.hotspots.push(newH);
@@ -427,29 +442,36 @@
             }
         });
 
-        // Drag Logic
+        // ลอจิกการลากจุด
         window.addEventListener('mousemove', (e) => {
-            const dragTarget = htmlLabels.find(l => l.isDragging);
-            if (!dragTarget) return;
+            if (!activeDragLabel || !activeSceneMesh) return;
 
             const rect = container.getBoundingClientRect();
+            const offset = (window.innerWidth <= 1024) ? 0 : 320;
             const mouse = new THREE.Vector2(
-                ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                ((e.clientX - rect.left - offset) / rect.width) * 2 - 1,
                 -((e.clientY - rect.top) / rect.height) * 2 + 1
             );
 
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObject(activeSceneMesh, true);
+            
             if (intersects.length > 0) {
-                const pt = activeSceneMesh.worldToLocal(intersects[0].point.clone());
-                dragTarget.pos.copy(intersects[0].point);
-                dragTarget.data.pos = [pt.x, pt.y, pt.z];
+                const worldPoint = intersects[0].point;
+                const localPoint = activeSceneMesh.worldToLocal(worldPoint.clone());
+                
+                // อัปเดตทั้งตำแหน่งในฉากและข้อมูลสำหรับบันทึก
+                activeDragLabel.labelObj.pos.copy(localPoint);
+                activeDragLabel.data.pos = [localPoint.x, localPoint.y, localPoint.z];
             }
         });
 
         window.addEventListener('mouseup', () => {
-            htmlLabels.forEach(l => l.isDragging = false);
+            if (activeDragLabel) {
+                activeDragLabel = null;
+                controls.enabled = true; // เปิดการหมุนกล้องคืน
+            }
         });
 
         // Firebase Save
@@ -523,6 +545,29 @@
             camera.updateProjectionMatrix();
             renderer.setSize(container.clientWidth, container.clientHeight);
         });
+
+        // --- Admin Security ---
+        window.toggleAdminAuth = function() {
+            const overlay = document.getElementById('admin-auth-overlay');
+            const panel = document.getElementById('admin-panel');
+            if (panel.classList.contains('active')) {
+                panel.classList.remove('active');
+            } else {
+                overlay.classList.add('visible');
+                document.getElementById('admin-pass').focus();
+            }
+        }
+
+        window.checkAdminAuth = function() {
+            const pass = document.getElementById('admin-pass').value;
+            if (pass === '2526') {
+                document.getElementById('admin-auth-overlay').classList.remove('visible');
+                document.getElementById('admin-panel').classList.add('active');
+                document.getElementById('admin-pass').value = '';
+            } else {
+                alert('รหัสผ่านไม่ถูกต้อง');
+            }
+        }
 
         renderList();
         loadModelIntoScene(db[0]);
