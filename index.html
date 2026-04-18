@@ -206,6 +206,7 @@
             <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 10px;">
                 * ในโหมดแก้ไข Double Click บนโมเดลเพื่อสร้างจุดใหม่
             </div>
+            <div id="drag-log" style="font-size: 0.75rem; color: #0ea5e9; margin-bottom: 15px; font-weight: bold; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; text-align: center;">พร้อมแก้ไข...</div>
             <button class="save-btn" id="save-firebase-btn">SAVE TO FIREBASE</button>
         </div>
 
@@ -413,9 +414,8 @@
             if (!document.getElementById('edit-mode').checked || !activeSceneMesh) return;
             
             const rect = container.getBoundingClientRect();
-            const offset = (window.innerWidth <= 1024) ? 0 : 320;
             const mouse = new THREE.Vector2(
-                ((e.clientX - rect.left - offset) / rect.width) * 2 - 1,
+                ((e.clientX - rect.left) / rect.width) * 2 - 1,
                 -((e.clientY - rect.top) / rect.height) * 2 + 1
             );
 
@@ -447,9 +447,8 @@
             if (!activeDragLabel || !activeSceneMesh) return;
 
             const rect = container.getBoundingClientRect();
-            const offset = (window.innerWidth <= 1024) ? 0 : 320;
             const mouse = new THREE.Vector2(
-                ((e.clientX - rect.left - offset) / rect.width) * 2 - 1,
+                ((e.clientX - rect.left) / rect.width) * 2 - 1,
                 -((e.clientY - rect.top) / rect.height) * 2 + 1
             );
 
@@ -464,6 +463,9 @@
                 // อัปเดตทั้งตำแหน่งในฉากและข้อมูลสำหรับบันทึก
                 activeDragLabel.labelObj.pos.copy(localPoint);
                 activeDragLabel.data.pos = [localPoint.x, localPoint.y, localPoint.z];
+
+                // อัปเดต UI Log เพื่อให้กูเห็น
+                document.getElementById('drag-log').innerText = `จุดที่ ${activeDragLabel.data.num}: [${localPoint.x.toFixed(3)}, ${localPoint.y.toFixed(3)}, ${localPoint.z.toFixed(3)}]`;
             }
         });
 
@@ -492,15 +494,21 @@
             leaderSVG.innerHTML = '';
             if (!activeSceneMesh) return;
 
+            const rect = container.getBoundingClientRect();
+            // ระยะ Sidebar (ถ้าจอใหญ่)
+            const sidebarWidth = (window.innerWidth <= 1024) ? 0 : 320;
+
             htmlLabels.forEach(label => {
-                // แปลงพิกัดจาก Local (ของโมเดล) ไปเป็น World (ของดาว)
-                // เพื่อให้ป้ายขยับตามโมเดลร้อยเปอร์เซ็นต์แม้จะสเกลหรือหมุน
                 const wp = label.pos.clone();
-                activeSceneMesh.localToWorld(wp);
+                // นำพิกัดโลกมาใช้ (ซึ่งต้องคำนวณจาก Matrix ของโมเดล)
+                activeSceneMesh.updateMatrixWorld();
+                wp.applyMatrix4(activeSceneMesh.matrixWorld);
 
                 const screenPos = wp.project(camera);
-                const x = (screenPos.x + 1) * container.clientWidth / 2;
-                const y = (-screenPos.y + 1) * container.clientHeight / 2;
+                
+                // คำนวณพิกัดหน้าจอ
+                const x = (screenPos.x * 0.5 + 0.5) * rect.width;
+                const y = (-(screenPos.y * 0.5) + 0.5) * rect.height;
 
                 if (screenPos.z > 1) {
                     label.element.style.display = 'none';
@@ -508,19 +516,17 @@
                 }
                 
                 label.element.style.display = 'flex';
-                // ปรับตำแหน่งตาม Sidebar (320px) ถ้าเป็น Desktop
-                const offset = (window.innerWidth <= 1024) ? 0 : 320;
-                label.element.style.left = `${x + offset - (label.element.clientWidth / 2)}px`;
+                label.element.style.left = `${x + sidebarWidth - (label.element.clientWidth / 2)}px`;
                 label.element.style.top = `${y - (label.element.clientHeight / 2)}px`;
 
                 if (label.element.classList.contains('active')) {
-                    const rect = document.getElementById('info-panel').getBoundingClientRect();
-                    const targetX = (window.innerWidth <= 768) ? window.innerWidth / 2 : rect.left;
-                    const targetY = (window.innerWidth <= 768) ? rect.top : rect.top + 50;
+                    const infoRect = document.getElementById('info-panel').getBoundingClientRect();
+                    const targetX = (window.innerWidth <= 768) ? window.innerWidth / 2 : infoRect.left;
+                    const targetY = (window.innerWidth <= 768) ? infoRect.top : infoRect.top + 50;
                     
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    const cp1x = x + (targetX - x) * 0.5;
-                    const d = `M ${x + offset} ${y} C ${cp1x + offset} ${y}, ${cp1x + offset} ${targetY}, ${targetX} ${targetY}`;
+                    const startX = x + sidebarWidth;
+                    const d = `M ${startX} ${y} Q ${startX + (targetX - startX) * 0.5} ${y}, ${targetX} ${targetY}`;
                     
                     path.setAttribute("d", d);
                     path.setAttribute("stroke", "#0ea5e9");
