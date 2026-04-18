@@ -257,6 +257,9 @@
             </div>
             <button class="save-btn" onclick="saveToFirebase()">☁️ บันทึกพิกัด + ล็อค</button>
             <textarea id="export-box" style="display:none; width:100%; height:70px; margin-top:3px; background: rgba(0,0,0,0.5); color:#a7f3d0; border:1px solid #10b981; border-radius:4px; padding:5px; font-size:9px; resize:none;" readonly></textarea>
+            <p id="edit-hint" style="display:none; font-size: 0.7rem; color: #fbbf24; background: rgba(251, 191, 36, 0.1); padding: 8px; border-radius: 6px; border: 1px solid rgba(251, 191, 36, 0.2); margin-top: 5px;">
+                💡 <b>วิธีเพิ่มจุดใหม่:</b> ดับเบิลคลิกที่ตัวโมเดล 3D ในจุดที่ต้องการได้เลยครับ
+            </p>
         </div>
         
         <div id="three-canvas"></div>
@@ -489,6 +492,52 @@
                 };
             });
         }
+
+        // --- เพิ่มจุดใหม่จากการ Double Click ---
+        container.ondblclick = (e) => {
+            const isEditMode = document.getElementById('edit-mode-toggle').checked;
+            if (!isEditMode || !activeSceneMesh) return;
+
+            const rect = container.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObject(activeSceneMesh, true);
+            if (intersects.length > 0) {
+                const hitWorld = intersects[0].point;
+                const localPos = activeSceneMesh.worldToLocal(hitWorld.clone());
+
+                // คำนวณเลขหมายเลขถัดไป
+                const nextNum = htmlLabels.length > 0 ? Math.max(...htmlLabels.map(l => l.hsData.num)) + 1 : 1;
+                
+                // สร้างพิกัด Norm [X, Y, Z]
+                const normPos = [
+                    (localPos.x * 2) / baseSizeGlobal.x,
+                    (localPos.y * 2) / baseSizeGlobal.y,
+                    (localPos.z * 2) / baseSizeGlobal.z
+                ];
+
+                const newHs = {
+                    num: nextNum,
+                    pos: normPos,
+                    name: 'New Part',
+                    th: 'ส่วนใหม่',
+                    desc: 'ระบุข้อมูลเพิ่มเติมได้ในโค้ด'
+                };
+
+                currentModel.hotspots.push(newHs);
+                createHotspots(currentModel, baseSizeGlobal);
+                console.log("Added new hotspot:", newHs);
+            }
+        };
+
+        // แสดง Hint เมื่อเปิด Edit Mode
+        document.getElementById('edit-mode-toggle').addEventListener('change', (e) => {
+            const hint = document.getElementById('edit-hint');
+            if(hint) hint.style.display = e.target.checked ? 'block' : 'none';
+        });
+
 
         // --- Save / Lock to Firebase ---
         window.saveToFirebase = async function() {
