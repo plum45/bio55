@@ -83,7 +83,7 @@
         #main-view { position: relative; width: 100%; height: 100vh; transition: margin-left 0.3s; }
         @media (min-width: 1025px) { #main-view { margin-left: 320px; width: calc(100% - 320px); } }
 
-        #three-canvas { width: 100%; height: 100%; cursor: grab; }
+        #three-canvas { width: 100%; height: 100%; cursor: grab; touch-action: none; user-select: none; }
         #three-canvas:active { cursor: grabbing; }
 
         /* --- Hotspots --- */
@@ -517,22 +517,34 @@
         };
 
         function updateHotspotPositions() {
-            leaderSVG.innerHTML = '';
             if (!activeSceneMesh) return;
 
+            // Update matrix just once per frame
+            activeSceneMesh.updateMatrixWorld(true);
+
             const rect = container.getBoundingClientRect();
-            // ระยะ Sidebar (ถ้าจอใหญ่)
             const sidebarWidth = (window.innerWidth <= 1024) ? 0 : 320;
+            
+            // Re-use an existing path or create one
+            let pathEl = document.getElementById('leader-line-path');
+            if (!pathEl) {
+                pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                pathEl.setAttribute("id", "leader-line-path");
+                pathEl.setAttribute("stroke", "#0ea5e9");
+                pathEl.setAttribute("stroke-width", "2");
+                pathEl.setAttribute("fill", "none");
+                pathEl.setAttribute("stroke-dasharray", "5,5");
+                leaderSVG.appendChild(pathEl);
+            }
+            
+            let activePathD = "";
 
             htmlLabels.forEach(label => {
                 const wp = label.pos.clone();
-                // นำพิกัดโลกมาใช้ (ซึ่งต้องคำนวณจาก Matrix ของโมเดล)
-                activeSceneMesh.updateMatrixWorld();
                 wp.applyMatrix4(activeSceneMesh.matrixWorld);
 
                 const screenPos = wp.project(camera);
                 
-                // คำนวณพิกัดหน้าจอ
                 const x = (screenPos.x * 0.5 + 0.5) * rect.width;
                 const y = (-(screenPos.y * 0.5) + 0.5) * rect.height;
 
@@ -550,18 +562,18 @@
                     const targetX = (window.innerWidth <= 768) ? window.innerWidth / 2 : infoRect.left;
                     const targetY = (window.innerWidth <= 768) ? infoRect.top : infoRect.top + 50;
                     
-                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     const startX = x + sidebarWidth;
-                    const d = `M ${startX} ${y} Q ${startX + (targetX - startX) * 0.5} ${y}, ${targetX} ${targetY}`;
-                    
-                    path.setAttribute("d", d);
-                    path.setAttribute("stroke", "#0ea5e9");
-                    path.setAttribute("stroke-width", "2");
-                    path.setAttribute("fill", "none");
-                    path.setAttribute("stroke-dasharray", "5,5");
-                    leaderSVG.appendChild(path);
+                    activePathD = `M ${startX} ${y} Q ${startX + (targetX - startX) * 0.5} ${y}, ${targetX} ${targetY}`;
                 }
             });
+            
+            // Only update DOM if necessary
+            if (activePathD) {
+                pathEl.setAttribute("d", activePathD);
+                pathEl.style.display = "block";
+            } else {
+                pathEl.style.display = "none";
+            }
         }
 
         function animate() {
